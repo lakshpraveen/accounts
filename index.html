@@ -1,0 +1,2864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Accounts">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="/manifest.json">
+<title>Business Accounts Tracker</title>
+<script src="/chart.min.js"></script>
+<style>
+:root {
+  --primary: #4f46e5;
+  --primary-dark: #4338ca;
+  --primary-light: #eef2ff;
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --muted: #94a3b8;
+  --border: #e2e8f0;
+  --green: #16a34a;
+  --green-bg: #dcfce7;
+  --red: #dc2626;
+  --red-bg: #fee2e2;
+  --amber: #d97706;
+  --amber-bg: #fef3c7;
+  --blue: #0284c7;
+  --blue-bg: #e0f2fe;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Header (60px) + nav (~45px) are both sticky, so anchored scrolls must clear them. */
+.card, .page-title, .cal-header { scroll-margin-top: 120px; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Header ── */
+header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-brand .logo {
+  width: 34px;
+  height: 34px;
+  background: var(--primary);
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+}
+
+.header-brand h1 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.fy-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px 5px 14px;
+}
+
+.fy-pill label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.fy-pill select {
+  border: none;
+  background: transparent;
+  background-image: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+}
+
+.privacy-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.privacy-toggle svg { width: 15px; height: 15px; flex-shrink: 0; }
+.privacy-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.privacy-toggle.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+.privacy-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* Masked numeric chips keep column widths stable while hiding the value. */
+.masked-val {
+  display: inline-block;
+  min-width: 2.2em;
+  text-align: center;
+  color: var(--muted);
+  letter-spacing: .12em;
+  user-select: none;
+}
+
+/* ── Navigation ── */
+nav#tabNav {
+  background: rgba(255,255,255,.88);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: sticky;
+  top: 60px;
+  z-index: 90;
+}
+
+nav#tabNav::-webkit-scrollbar { display: none; }
+
+nav#tabNav button {
+  border: none;
+  background: transparent;
+  padding: 14px 16px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color .15s;
+}
+
+nav#tabNav button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--primary);
+  opacity: 0;
+  transition: opacity .15s;
+}
+
+nav#tabNav button:hover { color: var(--text); background: var(--bg); }
+nav#tabNav button.active { color: var(--primary); }
+nav#tabNav button.active::after { opacity: 1; }
+nav#tabNav button { border-radius: var(--radius-sm) var(--radius-sm) 0 0; transition: color .15s, background .15s; }
+
+/* ── Layout ── */
+main {
+  padding: 28px 28px 72px;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.tab { display: none; }
+.tab.active { display: block; animation: fadeUp .28s ease both; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab.active { animation: none; }
+  * { transition: none !important; }
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .2s, border-color .2s;
+}
+
+.card:hover { box-shadow: var(--shadow); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.card h2 {
+  margin: 0 0 20px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.card-header h2 { margin: 0; }
+
+/* ── KPI tiles ── */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s, box-shadow .18s;
+}
+
+.kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary);
+}
+
+.kpi.green::before { background: var(--green); }
+.kpi.red::before   { background: var(--red); }
+.kpi.amber::before { background: var(--amber); }
+.kpi.blue::before  { background: var(--blue); }
+
+.kpi .label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.kpi .value {
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 6px;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.kpi .value.pos { color: var(--green); }
+.kpi .value.neg { color: var(--red); }
+
+/* ── Form design ── */
+.form-section {
+  margin-bottom: 20px;
+}
+
+.form-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.field { margin-bottom: 0; }
+.field.span-2 { grid-column: span 2; }
+.field.span-full { grid-column: 1 / -1; }
+#planForm .grid .field > label {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: 44px;
+  margin-bottom: 5px;
+}
+.plan-date-field label {
+  min-height: 44px;
+}
+.plan-date-field .label-helper {
+  min-height: 15px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 1.25;
+}
+
+@media (max-width: 700px) {
+  .field.span-2 { grid-column: span 1; }
+  #planForm .grid .field > label { min-height: auto; }
+  .plan-date-field label { min-height: auto; }
+  .plan-date-field .label-helper { min-height: 0; }
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  background: var(--card);
+  transition: border-color .15s, box-shadow .15s;
+  outline: none;
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+}
+
+input::placeholder { color: var(--muted); }
+
+.err {
+  color: var(--red);
+  font-size: 12.5px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  background: var(--primary);
+  color: #fff;
+}
+.btn:hover   { background: var(--primary-dark); box-shadow: 0 2px 8px rgba(79,70,229,.3); }
+.btn.secondary { background: var(--primary-light); color: var(--primary); }
+.btn.secondary:hover { background: #dde4ff; }
+.btn.danger  { background: var(--red-bg);   color: var(--red); }
+.btn.danger:hover  { background: #fecaca; }
+.btn.ghost   { background: transparent;      color: var(--text-secondary); padding: 7px 12px; }
+.btn.ghost:hover   { background: var(--bg); color: var(--text); }
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; margin: 0 -24px -24px; padding: 0 24px 24px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+
+thead tr { border-bottom: 2px solid var(--border); }
+
+th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
+
+td {
+  text-align: left;
+  padding: 12px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  color: var(--text);
+}
+
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--bg); }
+
+.row-actions { display: flex; gap: 6px; }
+
+.pos { color: var(--green); font-weight: 700; }
+.neg { color: var(--red);   font-weight: 700; }
+
+/* ── Filter bar ── */
+.filterbar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+}
+
+.filterbar .field { min-width: 200px; margin-bottom: 0; }
+
+/* ── College box ── */
+.college-box {
+  background: linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px;
+}
+
+.college-box .stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 4px;
+}
+
+.college-box .stat-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+/* ── Month accordion ── */
+.month-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.month-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  cursor: pointer;
+  background: var(--card);
+  transition: background .1s;
+  user-select: none;
+}
+
+.month-head:hover { background: var(--bg); }
+
+.month-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.month-head-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.month-head-right .profit-badge {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.chev {
+  color: var(--muted);
+  transition: transform .15s;
+  font-size: 12px;
+}
+
+.month-row.open .chev { transform: rotate(90deg); }
+
+.month-body {
+  padding: 20px;
+  display: none;
+  border-top: 1px solid var(--border);
+  background: #fafcff;
+}
+
+.month-row.open .month-body { display: block; }
+
+.month-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.month-stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.month-stat .s-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 3px;
+}
+
+.month-stat .s-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ── Analysis charts ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+}
+
+/* Canvases must be height-capped, otherwise Chart.js sizes them to width/2. */
+.chart-box {
+  position: relative;
+  height: 260px;
+}
+
+.chart-box canvas { position: absolute; inset: 0; }
+.chart-mask {
+  display: none;
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 18px;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(79, 70, 229, 0.08),
+    rgba(79, 70, 229, 0.08) 10px,
+    rgba(255, 255, 255, 0.92) 10px,
+    rgba(255, 255, 255, 0.92) 20px
+  );
+  color: var(--text-secondary);
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.chart-box.masked canvas { visibility: hidden; }
+.chart-box.masked .chart-mask { display: flex; }
+
+/* ── Note banner ── */
+.note {
+  font-size: 13px;
+  color: #92400e;
+  background: var(--amber-bg);
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-top: 12px;
+}
+
+/* ── Backup / Lists ── */
+textarea {
+  min-height: 220px;
+  font-family: ui-monospace, monospace;
+  font-size: 12.5px;
+  resize: vertical;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+textarea:focus { border-color: var(--primary); }
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.list-item:last-child { border-bottom: none; }
+
+.muted { color: var(--muted); font-size: 12.5px; }
+
+.inline-confirm {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+/* ── Page section label ── */
+.page-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  margin-bottom: 20px;
+}
+
+/* ── API error banner ── */
+#apiErrorBanner {
+  background: var(--red-bg);
+  color: #991b1b;
+  padding: 12px 28px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid #fca5a5;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+.empty-state p { margin: 8px 0 0; font-size: 13px; }
+
+/* ── Amount chips ── */
+.amount { font-variant-numeric: tabular-nums; font-weight: 600; }
+.amount.income-col { color: var(--green); }
+.amount.expense-col { color: var(--red); }
+
+/* ── Add person/college list input row ── */
+.add-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.add-row input { flex: 1; }
+
+/* ── Plans calendar ── */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.cal-header .cal-title { font-size: 15px; font-weight: 700; }
+.cal-nav { display: flex; gap: 8px; }
+
+/* Quick stats strip for the Plans tab */
+.plan-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.plan-stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: transform .18s, box-shadow .18s;
+}
+.plan-stat:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.plan-stat .ps-label {
+  font-size: 10.5px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .05em;
+  display: flex; align-items: center; gap: 5px;
+}
+.plan-stat .ps-value { font-size: 20px; font-weight: 800; margin-top: 4px; letter-spacing: -0.03em; }
+.plan-stat.alert .ps-value { color: var(--red); }
+.plan-stat.ok .ps-value { color: var(--green); }
+
+.plan-picker-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.plan-picker-hint strong { color: var(--primary); }
+.plan-date-input.calendar-picking {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+}
+.plan-day-details {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(79,70,229,.04), rgba(79,70,229,.02));
+}
+.plan-day-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.plan-day-title h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.plan-day-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+.plan-day-list {
+  display: grid;
+  gap: 10px;
+}
+.plan-day-item {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  border: 1px solid var(--border);
+}
+.plan-day-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.plan-day-item-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.plan-day-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.plan-inline-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+.plan-inline-chip.purple {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+/* Employee quick-pick chips */
+.emp-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.emp-pick {
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all .15s;
+}
+.emp-pick:hover { border-color: var(--primary); color: var(--primary); }
+.emp-pick.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.cal-dow {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding-bottom: 6px;
+}
+.cal-day {
+  min-height: 92px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 7px;
+  font-size: 12px;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.cal-day:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+  transform: translateY(-1px);
+}
+.cal-day.empty { background: transparent; border: none; cursor: default; }
+.cal-day.empty:hover { box-shadow: none; transform: none; }
+.cal-day.past { opacity: .55; }
+.cal-day.today { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+.cal-day.has-conflict { background: var(--red-bg); border-color: #fca5a5; }
+.cal-day.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+}
+.cal-day.range-anchor {
+  border-color: var(--primary);
+  background: rgba(79,70,229,.06);
+}
+.cal-day .cal-daynum { font-weight: 700; color: var(--text-secondary); display:flex; align-items:center; justify-content:space-between; }
+.cal-day.today .cal-daynum { color: var(--primary); }
+.cal-day.today .cal-daynum::after {
+  content: 'Today';
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  background: var(--primary); color: #fff;
+  border-radius: 999px; padding: 1px 6px; letter-spacing: .04em;
+}
+.cal-plan-chip {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cal-day.has-conflict .cal-plan-chip { background: #fff; color: var(--red); }
+.conflict-item {
+  background: #fffaf0;
+  color: var(--text-secondary);
+  border: 1px solid #fde7b0;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.conflict-item strong {
+  display: block;
+  color: var(--text);
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.conflict-item .meta {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.conflict-item .subtle {
+  margin-top: 6px;
+  color: var(--muted);
+}
+.plan-chip-tag {
+  display: inline-block;
+  background: var(--blue-bg);
+  color: var(--blue);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin: 2px 4px 2px 0;
+}
+.plan-chip-tag.short { background: var(--amber-bg); color: var(--amber); }
+
+/* Keep clashes visible in the list, but let the calendar remain the primary cue. */
+tr.row-conflict > td { background: rgba(245, 158, 11, .06); }
+
+.staff-ok { color: var(--green); font-weight: 700; }
+.staff-short { color: var(--amber); font-weight: 700; }
+
+@media (max-width: 700px) {
+  .cal-day { min-height: 62px; padding: 4px; }
+  .cal-day .cal-daynum::after { display: none; }
+  .cal-plan-chip { font-size: 9.5px; padding: 1px 4px; }
+  .plan-day-item-top { flex-direction: column; }
+}
+
+/* ── Responsive ── */
+
+/* Tablet — ≤ 900px */
+@media (max-width: 900px) {
+  main { padding: 20px 20px 72px; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Large phone / small tablet — ≤ 680px */
+@media (max-width: 680px) {
+  /* Header */
+  header {
+    height: auto;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .header-brand h1 { font-size: 15px; }
+  .fy-pill { padding: 4px 10px 4px 12px; }
+  .fy-pill label { font-size: 11px; }
+  .fy-pill { flex-wrap: wrap; }
+  .privacy-toggle { padding: 7px 10px; font-size: 11px; }
+
+  /* Nav */
+  nav#tabNav { padding: 0 12px; }
+  nav#tabNav button { padding: 12px 12px; font-size: 12.5px; }
+
+  /* Main layout */
+  main { padding: 14px 12px 80px; }
+  .page-title { font-size: 17px; margin-bottom: 14px; }
+
+  /* Cards */
+  .card { padding: 16px; border-radius: 10px; }
+  .card h2 { font-size: 14px; margin-bottom: 14px; }
+
+  /* KPI grid */
+  .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+  .kpi { padding: 14px 14px 14px 18px; border-radius: 10px; }
+  .kpi .label { font-size: 10px; }
+  .kpi .value { font-size: 18px; margin-top: 4px; }
+
+  /* Form grid — single column */
+  .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  input, select { font-size: 16px; /* prevents iOS zoom */ padding: 9px 10px; }
+  .btn-row { margin-top: 14px; }
+  .btn { padding: 10px 16px; font-size: 13px; }
+
+  /* Filter bar */
+  .filterbar { padding: 12px 14px; gap: 8px; }
+  .filterbar .field { min-width: 100%; }
+
+  /* College summary box */
+  .college-box { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px 14px; }
+  .college-box .stat-value { font-size: 14px; }
+
+  /* Month accordion */
+  .month-head { flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 14px; }
+  .month-head-right { gap: 10px; font-size: 12px; }
+  .month-body { padding: 14px; }
+  .month-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .month-stat { padding: 10px 12px; }
+  .month-stat .s-value { font-size: 13px; }
+
+  /* Table: allow horizontal scroll, never clip */
+  .table-wrap {
+    margin: 0 -16px -16px;
+    padding: 0 16px 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table { font-size: 12.5px; }
+  th { font-size: 10px; padding: 8px 8px; }
+  td { padding: 10px 8px; }
+
+  /* Row actions — stack or shrink */
+  .row-actions { gap: 4px; }
+  .row-actions .btn { padding: 6px 8px; font-size: 12px; }
+
+  /* Lists */
+  .list-item { gap: 8px; }
+
+  /* Charts single col already at 900, but ensure canvas doesn't overflow */
+  canvas { max-width: 100%; }
+
+  /* Backup textarea */
+  textarea { font-size: 11.5px; min-height: 160px; }
+
+  /* API error banner */
+  #apiErrorBanner { padding: 10px 16px; font-size: 12.5px; }
+}
+
+/* Small phone — ≤ 420px */
+@media (max-width: 420px) {
+  header { padding: 8px 12px; }
+  nav#tabNav { padding: 0 8px; }
+  nav#tabNav button { padding: 11px 10px; font-size: 12px; }
+
+  main { padding: 12px 10px 80px; }
+
+  .kpis { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kpi { padding: 12px 12px 12px 16px; }
+  .kpi .value { font-size: 16px; }
+
+  /* Go fully single-column on very narrow screens */
+  .grid { grid-template-columns: 1fr; }
+  .college-box { grid-template-columns: repeat(2, 1fr); }
+
+  .month-stats { grid-template-columns: repeat(2, 1fr); }
+
+  /* Hide less-important income table columns on very small screens */
+  #incomeTable th:nth-child(6),
+  #incomeTable td:nth-child(6),
+  #incomeTable th:nth-child(8),
+  #incomeTable td:nth-child(8) { display: none; }
+
+  .btn { min-height: 44px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <div class="logo">📊</div>
+    <h1>Business Accounts</h1>
+  </div>
+  <div class="fy-pill">
+    <label>Financial Year</label>
+    <select id="fySelect"></select>
+    <button type="button" class="privacy-toggle" id="privacyToggle">Hide amounts</button>
+  </div>
+</header>
+
+<nav id="tabNav"></nav>
+
+<datalist id="collegeOptions"></datalist>
+<datalist id="personOptions"></datalist>
+
+<main>
+
+  <!-- SUMMARY / OVERVIEW -->
+  <section class="tab" id="tab-summary">
+    <div class="page-title">Overview</div>
+    <div id="summaryKpis" class="kpis"></div>
+    <div class="charts-grid">
+      <div class="card"><h2>Revenue, Expenses &amp; Profit (Monthly)</h2><div class="chart-box"><canvas id="chartMonthly"></canvas><div class="chart-mask">Amounts hidden</div></div></div>
+      <div class="card"><h2>Cumulative Profit</h2><div class="chart-box"><canvas id="chartCumulative"></canvas><div class="chart-mask">Amounts hidden</div></div></div>
+      <div class="card"><h2>GST Collected vs Paid</h2><div class="chart-box"><canvas id="chartGst"></canvas><div class="chart-mask">Amounts hidden</div></div></div>
+      <div class="card"><h2>Where the Money Goes</h2><div class="chart-box"><canvas id="chartSpend"></canvas><div class="chart-mask">Amounts hidden</div></div></div>
+      <div class="card"><h2>Revenue by College</h2><div class="chart-box"><canvas id="chartCollege"></canvas><div class="chart-mask">Amounts hidden</div></div></div>
+      <div class="card"><h2>Payroll by Employee</h2><div class="chart-box"><canvas id="chartEmployee"></canvas><div class="chart-mask">Amounts hidden</div></div></div>
+    </div>
+    <div class="card">
+      <h2>Employee Payout Summary</h2>
+      <div id="employeeTable"></div>
+    </div>
+    <div class="card">
+      <h2>Key Insights</h2>
+      <div id="analysisNotes"></div>
+      <div class="note">Income tax, depreciation and loan interest are not covered by this tracker. Please confirm treatment of these with your CA.</div>
+    </div>
+    <div class="card">
+      <h2>Monthly Breakdown</h2>
+      <div id="monthlyBody"></div>
+    </div>
+  </section>
+
+  <!-- INCOME -->
+  <section class="tab" id="tab-income">
+    <div class="page-title">Income</div>
+
+    <div class="card">
+      <h2 id="incomeFormTitle">Add Income Entry</h2>
+      <form id="incomeForm">
+        <div class="grid">
+          <div class="field"><label>Date</label><input type="date" id="incomeDate"></div>
+          <div class="field"><label>College</label><input type="text" id="incomeCollege" list="collegeOptions" placeholder="Type or select"></div>
+          <div class="field"><label>Description</label><input type="text" id="incomeDesc" placeholder="Invoice or description"></div>
+          <div class="field"><label>Amount before GST (₹)</label><input type="number" step="0.01" id="incomeAmount" placeholder="0.00"></div>
+          <div class="field"><label>GST %</label><input type="number" step="0.01" id="incomeGst" value="18"></div>
+          <div class="field"><label>TDS %</label><input type="number" step="0.01" id="incomeTds" value="10"></div>
+          <div class="field"><label>Commission (₹)</label><input type="number" step="0.01" id="incomeCommission" value="0"></div>
+          <div class="field"><label>Payment Mode</label><select id="incomeMode"><option>Bank Transfer</option><option>Cash</option></select></div>
+          <div class="field"><label>Paid So Far (₹)</label><input type="number" step="0.01" id="incomePaid" placeholder="0.00"></div>
+          <div class="field"><label>Notes</label><input type="text" id="incomeNotes" placeholder="Optional"></div>
+        </div>
+      </form>
+      <div id="incomeErr" class="err"></div>
+      <div class="btn-row">
+        <button class="btn" id="incomeSaveBtn">Add Entry</button>
+        <button class="btn ghost" id="incomeCancelBtn" style="display:none;">Cancel edit</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="filterbar">
+        <div class="field"><label for="incomeFilterCollege">Filter by college</label><select id="incomeFilterCollege"><option value="">All colleges</option></select></div>
+      </div>
+      <div id="incomeCollegeBox"></div>
+      <div class="table-wrap"><table id="incomeTable"></table></div>
+    </div>
+  </section>
+
+  <!-- EXPENSES -->
+  <section class="tab" id="tab-expenses">
+    <div class="page-title">Expenses</div>
+
+    <div class="card">
+      <h2 id="expenseFormTitle">Add Expense</h2>
+      <form id="expenseForm">
+        <div class="grid">
+          <div class="field"><label>Date</label><input type="date" id="expenseDate"></div>
+          <div class="field"><label>College (optional)</label><input type="text" id="expenseCollege" list="collegeOptions" placeholder="Leave blank for general"></div>
+          <div class="field"><label>Category</label>
+            <select id="expenseCategory">
+              <option>Food</option><option>Travel</option><option>Rent</option><option>Supplies</option><option>Other</option>
+            </select>
+          </div>
+          <div class="field"><label>Description</label><input type="text" id="expenseDesc" placeholder="What was this for?"></div>
+          <div class="field"><label>Amount (₹)</label><input type="number" step="0.01" id="expenseAmount" placeholder="0.00"></div>
+          <div class="field"><label>Notes</label><input type="text" id="expenseNotes" placeholder="Optional"></div>
+        </div>
+      </form>
+      <div id="expenseErr" class="err"></div>
+      <div class="btn-row">
+        <button class="btn" id="expenseSaveBtn">Add Expense</button>
+        <button class="btn ghost" id="expenseCancelBtn" style="display:none;">Cancel edit</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="filterbar">
+        <div class="field"><label for="expenseFilterCollege">Filter by college</label><select id="expenseFilterCollege"><option value="">All colleges</option></select></div>
+      </div>
+      <div id="expenseCollegeBox"></div>
+      <div class="table-wrap"><table id="expenseTable"></table></div>
+    </div>
+  </section>
+
+  <!-- PAYROLL -->
+  <section class="tab" id="tab-payroll">
+    <div class="page-title">Payroll</div>
+
+    <div class="card">
+      <h2 id="payrollFormTitle">Add Payroll Entry</h2>
+      <form id="payrollForm">
+        <div class="grid">
+          <div class="field"><label>Date</label><input type="date" id="payrollDate"></div>
+          <div class="field"><label>College</label><input type="text" id="payrollCollege" list="collegeOptions" placeholder="Type or select"></div>
+          <div class="field"><label>Person</label><input type="text" id="payrollPerson" list="personOptions" placeholder="Type or select"></div>
+          <div class="field"><label>Amount (₹)</label><input type="number" step="0.01" id="payrollAmount" placeholder="0.00"></div>
+          <div class="field"><label>Payment Mode</label><select id="payrollMode"><option>Cash</option><option>Bank Transfer</option></select></div>
+          <div class="field"><label>Paid So Far (₹)</label><input type="number" step="0.01" id="payrollPaid" placeholder="0.00"></div>
+          <div class="field"><label>Notes</label><input type="text" id="payrollNotes" placeholder="Optional"></div>
+        </div>
+      </form>
+      <div id="payrollErr" class="err"></div>
+      <div class="btn-row">
+        <button class="btn" id="payrollSaveBtn">Add Entry</button>
+        <button class="btn ghost" id="payrollCancelBtn" style="display:none;">Cancel edit</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="filterbar">
+        <div class="field"><label for="payrollFilterCollege">Filter by college</label><select id="payrollFilterCollege"><option value="">All colleges</option></select></div>
+      </div>
+      <div id="payrollCollegeBox"></div>
+      <div id="payrollTable"></div>
+    </div>
+  </section>
+
+  <!-- PLANS -->
+  <section class="tab" id="tab-plans">
+    <div class="page-title">Upcoming College Plans</div>
+
+    <div class="plan-stats" id="planStats"></div>
+
+    <div class="card">
+      <h2 id="planFormTitle">Add Upcoming Plan</h2>
+      <form id="planForm">
+        <div class="grid">
+          <div class="field plan-date-field">
+            <label><span>Start Date</span><span class="label-helper">&nbsp;</span></label>
+            <input type="date" id="planDate" class="plan-date-input">
+          </div>
+          <div class="field plan-date-field">
+            <label><span>End Date</span><span class="label-helper">Optional, for multi-day visits</span></label>
+            <input type="date" id="planEndDate" class="plan-date-input">
+          </div>
+          <div class="field"><label>College</label><input type="text" id="planCollege" list="collegeOptions" placeholder="Type or select"></div>
+          <div class="field"><label>Location</label><input type="text" id="planLocation" placeholder="City / address"></div>
+          <div class="field"><label>Students Expected</label><input type="number" min="0" step="1" id="planStudents" placeholder="0"></div>
+          <div class="field"><label>Employees Needed</label><input type="number" min="0" step="1" id="planEmployeesNeeded" placeholder="0"></div>
+          <div class="field span-full" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <div class="plan-picker-hint" id="planDatePickerHint" style="flex:1;min-width:0;"></div>
+            <button type="button" id="planSundayToggle" class="privacy-toggle" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              <span>Skip Sundays</span>
+            </button>
+          </div>
+          <div class="field span-2">
+            <label>Assigned Employee Names</label>
+            <input type="text" id="planAssignedNames" placeholder="Comma separated, e.g. Asha, Ravi">
+            <div class="emp-picker" id="planEmpPicker"></div>
+          </div>
+          <div class="field span-full"><label>Notes</label><input type="text" id="planNotes" placeholder="Optional — anything the team should know"></div>
+        </div>
+      </form>
+      <div id="planErr" class="err"></div>
+      <div class="btn-row">
+        <button class="btn" id="planSaveBtn">Add Plan</button>
+        <button class="btn ghost" id="planCancelBtn" style="display:none;">Cancel edit</button>
+      </div>
+    </div>
+
+    <div class="card" id="planConflictsCard" style="display:none;">
+      <h2>Calendar overlap notes</h2>
+      <div id="planConflicts"></div>
+    </div>
+
+    <div class="card">
+      <div class="plan-day-details" id="planDayDetails"></div>
+      <div class="cal-header">
+        <div class="cal-title" id="planCalTitle"></div>
+        <div class="cal-nav">
+          <button class="btn ghost" id="planCalPrev">◀ Prev</button>
+          <button class="btn ghost" id="planCalToday">Today</button>
+          <button class="btn ghost" id="planCalNext">Next ▶</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="planCalGrid"></div>
+    </div>
+
+    <div class="card">
+      <h2>Upcoming Plans List</h2>
+      <div class="table-wrap"><table id="planTable"></table></div>
+    </div>
+  </section>
+
+  <!-- LISTS -->
+  <section class="tab" id="tab-lists">
+    <div class="page-title">Lists</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+      <div class="card">
+        <h2>Colleges</h2>
+        <div class="add-row">
+          <input type="text" id="newCollege" placeholder="New college name">
+          <button class="btn" id="addCollegeBtn">Add</button>
+        </div>
+        <div id="collegeList"></div>
+      </div>
+      <div class="card">
+        <h2>People</h2>
+        <div class="add-row">
+          <input type="text" id="newPerson" placeholder="New person name">
+          <button class="btn" id="addPersonBtn">Add</button>
+        </div>
+        <div id="personList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BACKUP -->
+  <section class="tab" id="tab-backup">
+    <div class="page-title">Backup &amp; Restore</div>
+    <div class="card">
+      <h2>Export Backup</h2>
+      <p style="color:var(--text-secondary);font-size:13px;margin:0 0 14px;">Copy this JSON and save it somewhere safe. Do this regularly.</p>
+      <textarea id="backupText" readonly></textarea>
+      <div class="btn-row">
+        <button class="btn" id="copyBackupBtn">Copy to clipboard</button>
+        <span id="copyMsg" class="muted"></span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Restore from Backup</h2>
+      <p style="color:var(--text-secondary);font-size:13px;margin:0 0 14px;">Paste a previously saved backup JSON below. This will overwrite all current data.</p>
+      <textarea id="restoreText" placeholder="Paste backup JSON here…" style="background:var(--card);color:var(--text);border-color:var(--border);"></textarea>
+      <div id="restoreErr" class="err"></div>
+      <div class="btn-row" id="restoreActions">
+        <button class="btn danger" id="restoreBtn">Restore (overwrites current data)</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+/* ---------- Data layer (localStorage — no server needed) ---------- */
+const STORAGE_KEY = 'accountsSelectedFY';
+const PRIVACY_KEY = 'accountsHideAmounts';
+const DB_KEY      = 'summa_db';
+
+function genId(){ return Date.now().toString(36) + Math.random().toString(36).substr(2, 9); }
+
+function lsLoad(){
+  try{ return JSON.parse(localStorage.getItem(DB_KEY)) || lsDefault(); }
+  catch(e){ return lsDefault(); }
+}
+function lsDefault(){
+  return { colleges:[], people:[], income:[], expenses:[], payroll:[], plans:[] };
+}
+function lsSave(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+function defaultData(){
+  return { lists:{colleges:[], people:[]}, income:[], expenses:[], payroll:[], plans:[], selectedFY:null };
+}
+let state = defaultData();
+state.selectedFY = Number(localStorage.getItem(STORAGE_KEY)) || null;
+state.hideAmounts = localStorage.getItem(PRIVACY_KEY) === '1';
+
+async function apiGet(path){
+  const db = lsLoad();
+  if(path === 'colleges') return db.colleges;
+  if(path === 'people')   return db.people;
+  return db[path] || [];
+}
+
+async function apiSend(method, path, body){
+  const db = lsLoad();
+  const [collection, id] = path.split('/');
+
+  if(method === 'POST' && path === 'colleges/ensure'){
+    if(!db.colleges.find(c => c.name === body.name)){
+      db.colleges.push({ id: genId(), name: body.name });
+      lsSave(db);
+    }
+    return {};
+  }
+  if(method === 'POST' && path === 'people/ensure'){
+    if(!db.people.find(p => p.name === body.name)){
+      db.people.push({ id: genId(), name: body.name });
+      lsSave(db);
+    }
+    return {};
+  }
+  if(method === 'POST' && path === 'restore'){
+    const restored = {
+      colleges: (body.lists?.colleges || []).map(name => ({ id: genId(), name })),
+      people:   (body.lists?.people   || []).map(name => ({ id: genId(), name })),
+      income:   (body.income   || []).map(r => ({ ...r, id: r.id || genId() })),
+      expenses: (body.expenses || []).map(r => ({ ...r, id: r.id || genId() })),
+      payroll:  (body.payroll  || []).map(r => ({ ...r, id: r.id || genId() })),
+      plans:    (body.plans    || []).map(r => ({ ...r, id: r.id || genId() })),
+    };
+    lsSave(restored);
+    return {};
+  }
+  if(method === 'POST'){
+    const record = { ...body, id: genId() };
+    db[collection] = [...(db[collection] || []), record];
+    lsSave(db);
+    return record;
+  }
+  if(method === 'PUT'){
+    db[collection] = (db[collection] || []).map(r => r.id === id ? { ...r, ...body, id } : r);
+    lsSave(db);
+    return {};
+  }
+  if(method === 'DELETE'){
+    db[collection] = (db[collection] || []).filter(r => r.id !== id);
+    lsSave(db);
+    return {};
+  }
+  return {};
+}
+
+async function fetchAll(){
+  const db = lsLoad();
+  state.lists.colleges   = db.colleges.map(c => c.name);
+  state.lists.collegeIds = Object.fromEntries(db.colleges.map(c => [c.name, c.id]));
+  state.lists.people     = db.people.map(p => p.name);
+  state.lists.personIds  = Object.fromEntries(db.people.map(p => [p.name, p.id]));
+  state.income   = db.income;
+  state.expenses = db.expenses;
+  state.payroll  = db.payroll;
+  state.plans    = db.plans;
+}
+
+function showApiError(msg){
+  let banner = document.getElementById('apiErrorBanner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'apiErrorBanner';
+    document.body.insertBefore(banner, document.querySelector('nav'));
+  }
+  banner.textContent = msg;
+}
+function clearApiError(){
+  const banner = document.getElementById('apiErrorBanner');
+  if(banner) banner.remove();
+}
+
+/* ---------- Formatting ---------- */
+function formatINRRaw(n){
+  n = Number(n) || 0;
+  if(Math.abs(n) < 0.005) n = 0;
+  const neg = n < 0;
+  n = Math.abs(n);
+  const fixed = n.toFixed(2);
+  let [intPart, dec] = fixed.split('.');
+  let lastThree = intPart.slice(-3);
+  let other = intPart.slice(0, -3);
+  if(other !== '') lastThree = ',' + lastThree;
+  const grouped = other.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + lastThree;
+  const result = '₹' + grouped + (dec !== '00' ? '.' + dec : '');
+  return (neg ? '−' : '') + result;
+}
+function formatINR(n){
+  if(state.hideAmounts) return '••••';
+  return formatINRRaw(n);
+}
+function fmtDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+/* Masks plan headcounts when privacy mode is on. */
+function maskNum(value, fallback){
+  const empty = fallback === undefined ? '<span class="muted">—</span>' : fallback;
+  if(value === null || value === undefined || value === '') return empty;
+  if(state.hideAmounts) return '<span class="masked-val">••</span>';
+  return Number(value).toLocaleString('en-IN');
+}
+function parseOptionalNumber(v){
+  const raw = String(v ?? '').trim();
+  if(raw === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+function redactBackupValue(value){
+  if(Array.isArray(value)) return value.map(redactBackupValue);
+  if(value && typeof value === 'object'){
+    const out = {};
+    for(const [key, val] of Object.entries(value)){
+      out[key] = typeof val === 'number' ? '••••' : redactBackupValue(val);
+    }
+    return out;
+  }
+  return value;
+}
+
+/* ---------- Financial year ---------- */
+function fyOfDate(iso){ const d=new Date(iso), y=d.getFullYear(), m=d.getMonth()+1; return m>=4?y:y-1; }
+function fyLabel(y){ return `${y}-${y+1}`; }
+function currentFYStart(){ const n=new Date(), y=n.getFullYear(), m=n.getMonth()+1; return m>=4?y:y-1; }
+function allFYStartYears(){
+  const years = new Set([currentFYStart()]);
+  [...state.income,...state.expenses,...state.payroll].forEach(e=>{ if(e.date) years.add(fyOfDate(e.date)); });
+  return [...years].sort((a,b)=>b-a);
+}
+function inSelectedFY(iso){ if(!iso) return false; return fyOfDate(iso)===state.selectedFY; }
+
+/* ---------- Tabs ---------- */
+const TABS = [
+  {id:'summary', label:'Overview'},
+  {id:'income',  label:'Income'},
+  {id:'expenses',label:'Expenses'},
+  {id:'payroll', label:'Payroll'},
+  {id:'plans',   label:'Plans'},
+  {id:'lists',   label:'Lists'},
+  {id:'backup',  label:'Backup'},
+];
+function initNav(){
+  const nav = document.getElementById('tabNav');
+  nav.innerHTML = TABS.map(t=>`<button data-tab="${t.id}">${t.label}</button>`).join('');
+  nav.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=> showTab(btn.dataset.tab));
+  });
+  showTab('summary');
+}
+function showTab(id){
+  document.querySelectorAll('nav#tabNav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
+  document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+id));
+  renderAll();
+}
+
+/* ---------- FY selector ---------- */
+function initFYSelect(){
+  if(state.selectedFY == null) state.selectedFY = currentFYStart();
+  const sel = document.getElementById('fySelect');
+  const years = allFYStartYears();
+  sel.innerHTML = years.map(y=>`<option value="${y}">${fyLabel(y)}</option>`).join('');
+  sel.value = state.selectedFY;
+  sel.addEventListener('change', ()=>{
+    state.selectedFY = Number(sel.value);
+    localStorage.setItem(STORAGE_KEY, state.selectedFY);
+    renderAll();
+  });
+}
+
+const EYE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function syncPrivacyToggle(){
+  const btn = document.getElementById('privacyToggle');
+  if(!btn) return;
+  btn.classList.toggle('on', state.hideAmounts);
+  const label = state.hideAmounts ? 'Show amounts' : 'Hide amounts';
+  btn.innerHTML = (state.hideAmounts ? EYE_OFF_ICON : EYE_ICON) + '<span>' + label + '</span>';
+  btn.setAttribute('aria-pressed', state.hideAmounts ? 'true' : 'false');
+  btn.title = state.hideAmounts ? 'Amounts are hidden — click to reveal' : 'Hide all amounts and analytics';
+}
+function setPrivacyMode(hidden){
+  state.hideAmounts = hidden;
+  localStorage.setItem(PRIVACY_KEY, hidden ? '1' : '0');
+  syncPrivacyToggle();
+  renderAll();
+}
+
+/* ---------- Datalists ---------- */
+function fillCollegeSelect(sel, includeEmpty, emptyLabel){
+  const current = sel.value;
+  let html = includeEmpty ? `<option value="">${emptyLabel}</option>` : '';
+  html += state.lists.colleges.map(c=>`<option value="${c}">${c}</option>`).join('');
+  sel.innerHTML = html;
+  if(current) sel.value = current;
+}
+function fillDatalists(){
+  document.getElementById('collegeOptions').innerHTML = state.lists.colleges.map(c=>`<option value="${c}">`).join('');
+  document.getElementById('personOptions').innerHTML  = state.lists.people.map(p=>`<option value="${p}">`).join('');
+}
+function registerCollege(name){ if(name && !state.lists.colleges.includes(name)) return apiSend('POST','colleges/ensure',{name}); return Promise.resolve(); }
+function registerPerson(name){  if(name && !state.lists.people.includes(name))   return apiSend('POST','people/ensure',{name});   return Promise.resolve(); }
+
+/* ---------- Calculations ---------- */
+function incomeDerived(e){
+  const gstAmount = e.amount * (e.gstPercent/100);
+  const gross = e.amount + gstAmount;
+  const tdsAmount = e.amount * (e.tdsPercent/100);
+  const bankAmount = gross - tdsAmount;
+  const commission = e.commission || 0;
+  const amountMinusGst = gross - gstAmount;
+  const amountMinusTds = e.amount - tdsAmount;
+  const amountMinusGstCommission = e.amount - gstAmount - commission;
+  const amountMinusCommission = e.amount - commission;
+  const inHand = amountMinusCommission;
+  return {gstAmount, gross, tdsAmount, bankAmount, amountMinusGst, amountMinusTds, amountMinusGstCommission, amountMinusCommission, inHand};
+}
+function fyFilter(arr){ return arr.filter(e=>inSelectedFY(e.date)); }
+function computeTotals(incomeArr, expenseArr, payrollArr){
+  let totalIncome=0, totalGst=0, totalTds=0, totalCommission=0, totalBank=0, totalInHand=0;
+  incomeArr.forEach(e=>{
+    const d = incomeDerived(e);
+    totalIncome += e.amount; totalGst += d.gstAmount; totalTds += d.tdsAmount;
+    totalCommission += (e.commission||0); totalBank += d.bankAmount; totalInHand += d.inHand;
+  });
+  let totalExpenses=0; expenseArr.forEach(e=> totalExpenses += e.amount);
+  let totalPayroll=0;  payrollArr.forEach(e=> totalPayroll  += e.amount);
+  const profit = totalIncome - totalExpenses - totalPayroll - totalCommission;
+  totalInHand = totalInHand - totalExpenses - totalPayroll;
+  return {totalIncome, totalGst, totalTds, totalCommission, totalBank, totalInHand, totalExpenses, totalPayroll, profit};
+}
+function collegeSummary(college, incomeArr, expenseArr, payrollArr){
+  const inc = incomeArr.filter(e=>e.college===college);
+  const exp = expenseArr.filter(e=>e.college===college);
+  const pay = payrollArr.filter(e=>e.college===college);
+  const t = computeTotals(inc, exp, pay);
+  return {income:t.totalIncome, inHand:t.totalInHand, payroll:t.totalPayroll, expenses:t.totalExpenses, profit:t.profit};
+}
+
+/* ---------- Row actions ---------- */
+function deleteButtonHTML(id, type){
+  return `<span class="row-actions" data-del-id="${id}" data-del-type="${type}">
+    <button class="btn ghost" data-action="edit">Edit</button>
+    <button class="btn danger" data-action="del">Delete</button>
+  </span>`;
+}
+function wireRowActions(tableEl, type, arr, onEdit){
+  tableEl.querySelectorAll('[data-del-id]').forEach(span=>{
+    const id = span.dataset.delId;
+    span.querySelector('[data-action="edit"]').addEventListener('click', ()=> onEdit(id));
+    span.querySelector('[data-action="del"]').addEventListener('click', ()=>{
+      span.innerHTML = `<span class="inline-confirm">Delete this row?
+        <button class="btn danger" data-action="yes">Yes</button>
+        <button class="btn ghost" data-action="no">No</button></span>`;
+      span.querySelector('[data-action="yes"]').addEventListener('click', async ()=>{
+        try{ await apiSend('DELETE', `${type}/${id}`); await refreshAndRender(); }
+        catch(err){ showApiError(err.message); }
+      });
+      span.querySelector('[data-action="no"]').addEventListener('click', ()=> renderAll());
+    });
+  });
+}
+
+/* ---------- Income ---------- */
+let editingIncomeId = null;
+function resetIncomeForm(){
+  editingIncomeId = null;
+  document.getElementById('incomeForm').reset();
+  document.getElementById('incomeGst').value = 18;
+  document.getElementById('incomeTds').value = 10;
+  document.getElementById('incomeCommission').value = 0;
+  document.getElementById('incomeMode').value = 'Bank Transfer';
+  document.getElementById('incomePaid').value = 0;
+  document.getElementById('incomeFormTitle').textContent = 'Add Income Entry';
+  document.getElementById('incomeSaveBtn').textContent  = 'Add Entry';
+  document.getElementById('incomeCancelBtn').style.display = 'none';
+  document.getElementById('incomeErr').textContent = '';
+}
+function saveIncome(){
+  const date = document.getElementById('incomeDate').value;
+  const college = document.getElementById('incomeCollege').value.trim();
+  const desc    = document.getElementById('incomeDesc').value.trim();
+  const amount  = parseFloat(document.getElementById('incomeAmount').value);
+  const gstPercent = parseFloat(document.getElementById('incomeGst').value) || 0;
+  const tdsPercent = parseFloat(document.getElementById('incomeTds').value) || 0;
+  const commission = parseFloat(document.getElementById('incomeCommission').value) || 0;
+  const paymentMode = document.getElementById('incomeMode').value;
+  const paidAmount = parseFloat(document.getElementById('incomePaid').value) || 0;
+  const notes  = document.getElementById('incomeNotes').value.trim();
+  const errEl  = document.getElementById('incomeErr');
+  if(!date || !college || !desc || isNaN(amount) || amount <= 0){
+    errEl.textContent = 'Please fill date, college, description and a valid amount.'; return;
+  }
+  errEl.textContent = '';
+  const payload = {date, college, description:desc, amount, gstPercent, tdsPercent, commission, paymentMode, paidAmount, notes};
+  (async ()=>{
+    try{
+      await registerCollege(college);
+      if(editingIncomeId) await apiSend('PUT', `income/${editingIncomeId}`, payload);
+      else                await apiSend('POST','income', payload);
+      resetIncomeForm(); await refreshAndRender();
+    }catch(err){ errEl.textContent = err.message; }
+  })();
+}
+function editIncome(id){
+  const row = state.income.find(e=>e.id===id); if(!row) return;
+  editingIncomeId = id;
+  document.getElementById('incomeDate').value       = row.date;
+  document.getElementById('incomeCollege').value    = row.college;
+  document.getElementById('incomeDesc').value       = row.description;
+  document.getElementById('incomeAmount').value     = row.amount;
+  document.getElementById('incomeGst').value        = row.gstPercent;
+  document.getElementById('incomeTds').value        = row.tdsPercent;
+  document.getElementById('incomeCommission').value = row.commission;
+  document.getElementById('incomeMode').value       = row.paymentMode || 'Bank Transfer';
+  document.getElementById('incomePaid').value       = row.paidAmount || 0;
+  document.getElementById('incomeNotes').value      = row.notes || '';
+  document.getElementById('incomeFormTitle').textContent = 'Edit Income Entry';
+  document.getElementById('incomeSaveBtn').textContent  = 'Save Changes';
+  document.getElementById('incomeCancelBtn').style.display = 'inline-flex';
+}
+function renderIncomeTable(){
+  const filterSel = document.getElementById('incomeFilterCollege');
+  fillCollegeSelect(filterSel, true, 'All colleges');
+  let rows = fyFilter(state.income).slice().sort((a,b)=> b.date.localeCompare(a.date));
+  const filterCollege = filterSel.value;
+  if(filterCollege) rows = rows.filter(r=>r.college===filterCollege);
+
+  const table = document.getElementById('incomeTable');
+  table.innerHTML = `<thead><tr>
+    <th>Date</th><th>College</th><th>Description</th>
+    <th>Amount+GST</th><th>GST</th><th>Net of GST</th>
+    <th>TDS</th><th>Net of TDS</th><th>Commission</th><th>In Hand</th><th>Mode</th><th>Paid</th><th>Pending</th><th></th>
+  </tr></thead><tbody>` +
+    (rows.length ? rows.map(e=>{
+      const d = incomeDerived(e);
+      const paid = e.paidAmount || 0;
+      const pending = d.gross - paid;
+      return `<tr>
+        <td>${fmtDate(e.date)}</td>
+        <td><strong>${e.college}</strong></td>
+        <td>${e.description}</td>
+        <td class="amount income-col">${formatINR(d.gross)}</td>
+        <td class="amount">${formatINR(d.gstAmount)}</td>
+        <td class="amount">${formatINR(d.amountMinusGst)}</td>
+        <td class="amount">${formatINR(d.tdsAmount)}</td>
+        <td class="amount">${formatINR(d.amountMinusTds)}</td>
+        <td class="amount">${formatINR(e.commission)}</td>
+        <td class="amount income-col">${formatINR(d.amountMinusCommission)}</td>
+        <td>${e.paymentMode || 'Bank Transfer'}</td>
+        <td class="amount">${formatINR(paid)}</td>
+        <td class="amount ${pending>0?'neg':''}">${formatINR(pending)}</td>
+        <td>${deleteButtonHTML(e.id,'income')}</td>
+      </tr>`;
+    }).join('') : `<tr><td colspan="14"><div class="empty-state"><p>No income entries found for this period.</p></div></td></tr>`) +
+    '</tbody>';
+  wireRowActions(table, 'income', state.income, editIncome);
+
+  const box = document.getElementById('incomeCollegeBox');
+  if(filterCollege){
+    const s = collegeSummary(filterCollege, fyFilter(state.income), fyFilter(state.expenses), fyFilter(state.payroll));
+    box.innerHTML = `<div class="college-box">
+      <div><div class="stat-label">In Hand</div><div class="stat-value pos">${formatINR(s.inHand)}</div></div>
+      <div><div class="stat-label">Payroll</div><div class="stat-value">${formatINR(s.payroll)}</div></div>
+      <div><div class="stat-label">Expenses</div><div class="stat-value">${formatINR(s.expenses)}</div></div>
+      <div><div class="stat-label">Profit</div><div class="stat-value ${s.profit<0?'neg':'pos'}">${formatINR(s.profit)}</div></div>
+    </div>`;
+  } else box.innerHTML = '';
+}
+
+/* ---------- Expenses ---------- */
+let editingExpenseId = null;
+function resetExpenseForm(){
+  editingExpenseId = null;
+  document.getElementById('expenseForm').reset();
+  document.getElementById('expenseFormTitle').textContent = 'Add Expense';
+  document.getElementById('expenseSaveBtn').textContent   = 'Add Expense';
+  document.getElementById('expenseCancelBtn').style.display = 'none';
+  document.getElementById('expenseErr').textContent = '';
+}
+function saveExpense(){
+  const date     = document.getElementById('expenseDate').value;
+  const college  = document.getElementById('expenseCollege').value.trim();
+  const category = document.getElementById('expenseCategory').value;
+  const desc     = document.getElementById('expenseDesc').value.trim();
+  const amount   = parseFloat(document.getElementById('expenseAmount').value);
+  const notes    = document.getElementById('expenseNotes').value.trim();
+  const errEl    = document.getElementById('expenseErr');
+  if(!date || !desc || isNaN(amount) || amount <= 0){
+    errEl.textContent = 'Please fill date, description and a valid amount.'; return;
+  }
+  errEl.textContent = '';
+  const payload = {date, college, category, description:desc, amount, notes};
+  (async ()=>{
+    try{
+      await registerCollege(college);
+      if(editingExpenseId) await apiSend('PUT', `expenses/${editingExpenseId}`, payload);
+      else                 await apiSend('POST','expenses', payload);
+      resetExpenseForm(); await refreshAndRender();
+    }catch(err){ errEl.textContent = err.message; }
+  })();
+}
+function editExpense(id){
+  const row = state.expenses.find(e=>e.id===id); if(!row) return;
+  editingExpenseId = id;
+  document.getElementById('expenseDate').value     = row.date;
+  document.getElementById('expenseCollege').value  = row.college || '';
+  document.getElementById('expenseCategory').value = row.category;
+  document.getElementById('expenseDesc').value     = row.description;
+  document.getElementById('expenseAmount').value   = row.amount;
+  document.getElementById('expenseNotes').value    = row.notes || '';
+  document.getElementById('expenseFormTitle').textContent = 'Edit Expense';
+  document.getElementById('expenseSaveBtn').textContent   = 'Save Changes';
+  document.getElementById('expenseCancelBtn').style.display = 'inline-flex';
+}
+function renderExpenseTable(){
+  const filterSel = document.getElementById('expenseFilterCollege');
+  fillCollegeSelect(filterSel, true, 'All colleges');
+  let rows = fyFilter(state.expenses).slice().sort((a,b)=> b.date.localeCompare(a.date));
+  const filterCollege = filterSel.value;
+  if(filterCollege) rows = rows.filter(r=>r.college===filterCollege);
+
+  const table = document.getElementById('expenseTable');
+  table.innerHTML = `<thead><tr>
+    <th>Date</th><th>College</th><th>Category</th><th>Description</th><th>Amount</th><th></th>
+  </tr></thead><tbody>` +
+    (rows.length ? rows.map(e=>`<tr>
+      <td>${fmtDate(e.date)}</td>
+      <td>${e.college || '<span class="muted">General</span>'}</td>
+      <td><span style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600;">${e.category}</span></td>
+      <td>${e.description}</td>
+      <td class="amount expense-col">${formatINRRaw(e.amount)}</td>
+      <td>${deleteButtonHTML(e.id,'expenses')}</td>
+    </tr>`).join('') : `<tr><td colspan="6"><div class="empty-state"><p>No expense entries found for this period.</p></div></td></tr>`) +
+    '</tbody>';
+  wireRowActions(table, 'expenses', state.expenses, editExpense);
+
+  const box = document.getElementById('expenseCollegeBox');
+  if(filterCollege){
+    const s = collegeSummary(filterCollege, fyFilter(state.income), fyFilter(state.expenses), fyFilter(state.payroll));
+    box.innerHTML = `<div class="college-box">
+      <div><div class="stat-label">In Hand</div><div class="stat-value pos">${formatINR(s.inHand)}</div></div>
+      <div><div class="stat-label">Payroll</div><div class="stat-value">${formatINR(s.payroll)}</div></div>
+      <div><div class="stat-label">Expenses</div><div class="stat-value expense-col">${formatINRRaw(s.expenses)}</div></div>
+      <div><div class="stat-label">Profit</div><div class="stat-value ${s.profit<0?'neg':'pos'}">${formatINR(s.profit)}</div></div>
+    </div>`;
+  } else box.innerHTML = '';
+}
+
+/* ---------- Payroll ---------- */
+let editingPayrollId = null;
+function resetPayrollForm(){
+  editingPayrollId = null;
+  document.getElementById('payrollForm').reset();
+  document.getElementById('payrollMode').value = 'Cash';
+  document.getElementById('payrollPaid').value = 0;
+  document.getElementById('payrollFormTitle').textContent = 'Add Payroll Entry';
+  document.getElementById('payrollSaveBtn').textContent   = 'Add Entry';
+  document.getElementById('payrollCancelBtn').style.display = 'none';
+  document.getElementById('payrollErr').textContent = '';
+}
+function savePayroll(){
+  const date    = document.getElementById('payrollDate').value;
+  const college = document.getElementById('payrollCollege').value.trim();
+  const person  = document.getElementById('payrollPerson').value.trim();
+  const amount  = parseFloat(document.getElementById('payrollAmount').value);
+  const paymentMode = document.getElementById('payrollMode').value;
+  const paidAmount = parseFloat(document.getElementById('payrollPaid').value) || 0;
+  const notes   = document.getElementById('payrollNotes').value.trim();
+  const errEl   = document.getElementById('payrollErr');
+  if(!date || !college || !person || isNaN(amount) || amount <= 0){
+    errEl.textContent = 'Please fill date, college, person and a valid amount.'; return;
+  }
+  errEl.textContent = '';
+  const payload = {date, college, person, amount, paymentMode, paidAmount, notes};
+  (async ()=>{
+    try{
+      await registerCollege(college); await registerPerson(person);
+      if(editingPayrollId) await apiSend('PUT', `payroll/${editingPayrollId}`, payload);
+      else                 await apiSend('POST','payroll', payload);
+      resetPayrollForm(); await refreshAndRender();
+    }catch(err){ errEl.textContent = err.message; }
+  })();
+}
+function editPayroll(id){
+  const row = state.payroll.find(e=>e.id===id); if(!row) return;
+  editingPayrollId = id;
+  document.getElementById('payrollDate').value    = row.date;
+  document.getElementById('payrollCollege').value = row.college;
+  document.getElementById('payrollPerson').value  = row.person;
+  document.getElementById('payrollAmount').value  = row.amount;
+  document.getElementById('payrollMode').value    = row.paymentMode || 'Cash';
+  document.getElementById('payrollPaid').value    = row.paidAmount || 0;
+  document.getElementById('payrollNotes').value   = row.notes || '';
+  document.getElementById('payrollFormTitle').textContent = 'Edit Payroll Entry';
+  document.getElementById('payrollSaveBtn').textContent   = 'Save Changes';
+  document.getElementById('payrollCancelBtn').style.display = 'inline-flex';
+}
+function renderPayrollTable(){
+  const filterSel = document.getElementById('payrollFilterCollege');
+  fillCollegeSelect(filterSel, true, 'All colleges');
+  let rows = fyFilter(state.payroll).slice().sort((a,b)=> b.date.localeCompare(a.date));
+  const filterCollege = filterSel.value;
+  if(filterCollege) rows = rows.filter(r=>r.college===filterCollege);
+
+  const byPerson = {};
+  rows.forEach(e=> (byPerson[e.person] = byPerson[e.person] || []).push(e));
+  const persons = Object.keys(byPerson).sort((a,b)=>
+    byPerson[b].reduce((s,e)=>s+e.amount,0) - byPerson[a].reduce((s,e)=>s+e.amount,0)
+  );
+
+  const container = document.getElementById('payrollTable');
+  if(!persons.length){
+    container.innerHTML = `<div class="empty-state"><p>No payroll entries found for this period.</p></div>`;
+  } else {
+    container.innerHTML = persons.map(person=>{
+      const entries = byPerson[person];
+      const total = entries.reduce((s,e)=>s+e.amount,0);
+      const totalPaid = entries.reduce((s,e)=>s+(e.paidAmount||0),0);
+      const totalPending = total - totalPaid;
+      const entryRows = entries.map(e=>{
+        const paid = e.paidAmount || 0;
+        const pending = e.amount - paid;
+        return `<tr>
+        <td>${fmtDate(e.date)}</td>
+        <td><strong>${e.college}</strong></td>
+        <td class="amount">${formatINR(e.amount)}</td>
+        <td>${e.paymentMode || 'Cash'}</td>
+        <td class="amount">${formatINR(paid)}</td>
+        <td class="amount ${pending>0?'neg':''}">${formatINR(pending)}</td>
+        <td>${e.notes || ''}</td>
+        <td>${deleteButtonHTML(e.id,'payroll')}</td>
+      </tr>`;
+      }).join('');
+      return `<div class="month-row" data-person="${person}">
+        <div class="month-head">
+          <div class="month-head-left">
+            <span class="chev">▶</span>
+            <span>${person}</span>
+          </div>
+          <div class="month-head-right">
+            <span>${entries.length} payment${entries.length>1?'s':''}</span>
+            <span>Total <strong class="profit-badge">${formatINR(total)}</strong></span>
+            ${totalPending>0 ? `<span>Pending <strong class="profit-badge neg">${formatINR(totalPending)}</strong></span>` : ''}
+          </div>
+        </div>
+        <div class="month-body">
+          <div class="table-wrap" style="margin:0;padding:0;">
+            <table>
+              <thead><tr><th>Date</th><th>College</th><th>Amount</th><th>Mode</th><th>Given</th><th>Pending</th><th>Notes</th><th></th></tr></thead>
+              <tbody>${entryRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  wireRowActions(container, 'payroll', state.payroll, editPayroll);
+  container.querySelectorAll('.month-head').forEach(h=>{
+    h.addEventListener('click', ()=> h.parentElement.classList.toggle('open'));
+  });
+
+  const box = document.getElementById('payrollCollegeBox');
+  if(filterCollege){
+    const s = collegeSummary(filterCollege, fyFilter(state.income), fyFilter(state.expenses), fyFilter(state.payroll));
+    box.innerHTML = `<div class="college-box">
+      <div><div class="stat-label">In Hand</div><div class="stat-value pos">${formatINR(s.inHand)}</div></div>
+      <div><div class="stat-label">Payroll Paid</div><div class="stat-value">${formatINR(s.payroll)}</div></div>
+      <div><div class="stat-label">Expenses</div><div class="stat-value">${formatINR(s.expenses)}</div></div>
+      <div><div class="stat-label">Profit</div><div class="stat-value ${s.profit<0?'neg':'pos'}">${formatINR(s.profit)}</div></div>
+    </div>`;
+  } else box.innerHTML = '';
+}
+
+/* ---------- Plans ---------- */
+let editingPlanId = null;
+let planCalDate = new Date();
+planCalDate.setDate(1);
+let selectedPlanDate = '';
+let planDatePickTarget = null;
+let planIncludeSundays = false; // default: skip Sundays
+// Jump the calendar to the first upcoming plan once, so future plans aren't hidden
+// behind a "Next" click when the current month happens to be empty.
+let planCalAutoJumped = false;
+
+// Resolves a plan's effective end date — falls back to its start date for single-day plans.
+function planEndStr(p){
+  return (p.endDate && p.endDate >= p.date) ? p.endDate : p.date;
+}
+// Expands a plan into every date it covers (inclusive), capped at a year to avoid runaway loops.
+function expandPlanDates(p){
+  const end = planEndStr(p);
+  const dates = [];
+  let d = new Date(p.date+'T00:00:00');
+  const endD = new Date(end+'T00:00:00');
+  const includeSundays = p.includeSundays !== false;
+  let guard = 0;
+  while(d <= endD && guard < 366){
+    if(includeSundays || d.getDay() !== 0){
+      dates.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+    }
+    d.setDate(d.getDate()+1);
+    guard++;
+  }
+  return dates;
+}
+function planDateLabel(p){
+  const end = planEndStr(p);
+  return end === p.date ? fmtDate(p.date) : `${fmtDate(p.date)} – ${fmtDate(end)}`;
+}
+function isSundayDate(dateStr){
+  return new Date(dateStr + 'T00:00:00').getDay() === 0;
+}
+function planTodayStr(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function maybeAutoJumpCalendar(){
+  if(planCalAutoJumped || !state.plans.length) return;
+  planCalAutoJumped = true;
+  const today = planTodayStr();
+  const future = state.plans.map(p=>p.date).filter(d=>d >= today).sort();
+  const target = future[0] || state.plans.map(p=>planEndStr(p)).sort().pop();
+  if(!target) return;
+  const [y,m] = target.split('-').map(Number);
+  if(y === planCalDate.getFullYear() && m-1 === planCalDate.getMonth()) return;
+  planCalDate = new Date(y, m-1, 1);
+}
+
+function getPlanNames(){
+  return document.getElementById('planAssignedNames').value
+    .split(',').map(s=>s.trim()).filter(Boolean);
+}
+
+function renderPlanEmpPicker(){
+  const box = document.getElementById('planEmpPicker');
+  if(!box) return;
+  const people = state.lists.people || [];
+  if(!people.length){ box.innerHTML = ''; return; }
+  const selected = new Set(getPlanNames().map(n=>n.toLowerCase()));
+  box.innerHTML = people.map(n=>
+    `<button type="button" class="emp-pick${selected.has(n.toLowerCase())?' on':''}" data-name="${n}">${n}</button>`
+  ).join('');
+  box.querySelectorAll('.emp-pick').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const name = btn.dataset.name;
+      const current = getPlanNames();
+      const idx = current.findIndex(n=>n.toLowerCase() === name.toLowerCase());
+      if(idx >= 0) current.splice(idx,1); else current.push(name);
+      document.getElementById('planAssignedNames').value = current.join(', ');
+      renderPlanEmpPicker();
+    });
+  });
+}
+
+function syncSundayToggle(){
+  const btn = document.getElementById('planSundayToggle');
+  if(!btn) return;
+  btn.classList.toggle('on', planIncludeSundays);
+  btn.setAttribute('aria-pressed', planIncludeSundays ? 'true' : 'false');
+  const label = planIncludeSundays ? 'Include Sundays' : 'Skip Sundays';
+  btn.querySelector('span').textContent = label;
+  btn.title = planIncludeSundays ? 'Sundays are counted as working days — click to skip them' : 'Sundays are skipped — click to include them';
+}
+
+function syncPlanDatePickUI(){
+  const startInput = document.getElementById('planDate');
+  const endInput = document.getElementById('planEndDate');
+  const hint = document.getElementById('planDatePickerHint');
+  if(startInput) startInput.classList.toggle('calendar-picking', planDatePickTarget === 'start');
+  if(endInput) endInput.classList.toggle('calendar-picking', planDatePickTarget === 'end');
+  if(!hint) return;
+  if(planDatePickTarget === 'start'){
+    hint.innerHTML = '📅 <strong>Selecting start date</strong> — click a day in the calendar below.';
+  }else if(planDatePickTarget === 'end'){
+    hint.innerHTML = '📅 <strong>Selecting end date</strong> — click a day in the calendar below.';
+  }else{
+    hint.innerHTML = 'Tip: click <strong>Start Date</strong> or <strong>End Date</strong>, then choose directly from the calendar below.';
+  }
+}
+
+function setPlanDatePickTarget(target){
+  planDatePickTarget = target;
+  syncPlanDatePickUI();
+  renderPlanCalendar();
+  renderSelectedPlanDay();
+}
+
+function applyCalendarDatePick(dateStr){
+  const startInput = document.getElementById('planDate');
+  const endInput = document.getElementById('planEndDate');
+  if(planDatePickTarget === 'start'){
+    startInput.value = dateStr;
+    if(endInput.value && endInput.value < dateStr) endInput.value = '';
+    setPlanDatePickTarget('end');
+    return;
+  }
+  if(planDatePickTarget === 'end'){
+    if(startInput.value && dateStr < startInput.value){
+      endInput.value = startInput.value;
+      startInput.value = dateStr;
+    }else{
+      endInput.value = dateStr;
+    }
+    planDatePickTarget = null;
+    syncPlanDatePickUI();
+    renderPlanCalendar();
+    renderSelectedPlanDay();
+    document.getElementById('planCollege').focus();
+  }
+}
+
+function renderSelectedPlanDay(){
+  const box = document.getElementById('planDayDetails');
+  if(!box) return;
+  if(!selectedPlanDate){
+    box.innerHTML = `
+      <div class="plan-day-title">
+        <h3>Calendar day details</h3>
+        <div class="plan-day-subtitle">Click any day to inspect plans or fill the form dates from the calendar.</div>
+      </div>`;
+    return;
+  }
+  const plans = state.plans
+    .filter(p=> expandPlanDates(p).includes(selectedPlanDate))
+    .sort((a,b)=> a.date.localeCompare(b.date));
+  const dayLabel = `${fmtDate(selectedPlanDate)}${isSundayDate(selectedPlanDate) ? ' · Sunday' : ''}`;
+  const pickingText = planDatePickTarget === 'start'
+    ? 'Currently choosing the start date from the calendar.'
+    : planDatePickTarget === 'end'
+      ? 'Currently choosing the end date from the calendar.'
+      : plans.length
+        ? `${plans.length} plan${plans.length > 1 ? 's' : ''} on this date`
+        : 'No plans on this date yet.';
+
+  box.innerHTML = `
+    <div class="plan-day-title">
+      <div>
+        <h3>${dayLabel}</h3>
+        <div class="plan-day-subtitle">${pickingText}</div>
+      </div>
+      ${planDatePickTarget ? `<button class="btn ghost" type="button" id="cancelPlanDatePickBtn">Stop picking</button>` : ''}
+    </div>
+    <div class="plan-day-list">
+      ${plans.length ? plans.map(p=>`
+        <div class="plan-day-item">
+          <div class="plan-day-item-top">
+            <div>
+              <div class="plan-day-item-title">${p.college}</div>
+              <div class="plan-day-meta">
+                <span class="plan-inline-chip purple">${planDateLabel(p)}</span>
+                ${p.location ? `<span class="plan-inline-chip">📍 ${p.location}</span>` : ''}
+                <span class="plan-inline-chip">${p.includeSundays === false ? 'No Sundays' : 'Sundays included'}</span>
+              </div>
+            </div>
+            <button class="btn secondary" type="button" data-plan-day-edit="${p.id}">✏️ Edit</button>
+          </div>
+          <div class="plan-day-meta">
+            <span>🎓 Students: ${maskNum(p.studentCount)}</span>
+            <span>👥 Needed: ${maskNum(p.employeesNeeded)}</span>
+            ${p.assignedNames && p.assignedNames.length ? `<span>🧑‍🤝‍🧑 ${p.assignedNames.join(', ')}</span>` : '<span>Unassigned</span>'}
+          </div>
+          ${p.notes ? `<div class="plan-day-subtitle" style="margin-top:8px;">${p.notes}</div>` : ''}
+        </div>`).join('') : `
+        <div class="plan-day-item">
+          <div class="plan-day-subtitle">Use this day to add a new plan, or pick it as the start/end of your range.</div>
+        </div>`}
+    </div>`;
+
+  const cancelBtn = document.getElementById('cancelPlanDatePickBtn');
+  if(cancelBtn) cancelBtn.addEventListener('click', ()=> setPlanDatePickTarget(null));
+  box.querySelectorAll('[data-plan-day-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      editPlan(btn.dataset.planDayEdit);
+      setPlanDatePickTarget(null);
+    });
+  });
+}
+
+
+function renderPlanStats(){
+  const box = document.getElementById('planStats');
+  if(!box) return;
+  const today = planTodayStr();
+  const upcoming = state.plans.filter(p=>planEndStr(p) >= today);
+  const students = upcoming.reduce((s,p)=>s+(p.studentCount||0),0);
+  const staff    = upcoming.reduce((s,p)=>s+(p.employeesNeeded||0),0);
+  const {conflicts} = computePlanConflicts();
+  const next = upcoming.slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
+
+  box.innerHTML = `
+    <div class="plan-stat"><div class="ps-label">📅 Upcoming Plans</div><div class="ps-value">${upcoming.length}</div></div>
+    <div class="plan-stat"><div class="ps-label">🎓 Students Expected</div><div class="ps-value">${maskNum(students, '0')}</div></div>
+    <div class="plan-stat"><div class="ps-label">👥 Staff Needed</div><div class="ps-value">${maskNum(staff, '0')}</div></div>
+    <div class="plan-stat ${conflicts.length?'alert':'ok'}"><div class="ps-label">${conflicts.length?'⚠️':'✅'} Date Conflicts</div><div class="ps-value">${conflicts.length}</div></div>
+    <div class="plan-stat"><div class="ps-label">⏭ Next Visit</div><div class="ps-value" style="font-size:14px;">${next ? fmtDate(next.date)+' · '+next.college : '—'}</div></div>`;
+}
+
+function resetPlanForm(){
+  editingPlanId = null;
+  document.getElementById('planForm').reset();
+  document.getElementById('planFormTitle').textContent = 'Add Upcoming Plan';
+  document.getElementById('planSaveBtn').textContent   = 'Add Plan';
+  document.getElementById('planCancelBtn').style.display = 'none';
+  document.getElementById('planErr').textContent = '';
+  planDatePickTarget = null;
+  planIncludeSundays = false;
+  renderPlanEmpPicker();
+  syncPlanDatePickUI();
+  syncSundayToggle();
+}
+async function savePlan(){
+  const date   = document.getElementById('planDate').value;
+  let endDate  = document.getElementById('planEndDate').value;
+  const college = document.getElementById('planCollege').value.trim();
+  const location = document.getElementById('planLocation').value.trim();
+  const studentCount = parseOptionalNumber(document.getElementById('planStudents').value);
+  const employeesNeeded = parseOptionalNumber(document.getElementById('planEmployeesNeeded').value);
+  const assignedNames = document.getElementById('planAssignedNames').value
+    .split(',').map(s=>s.trim()).filter(Boolean);
+  const notes = document.getElementById('planNotes').value.trim();
+  const errEl = document.getElementById('planErr');
+  if(!date || !college){
+    errEl.textContent = 'Please fill date and college.'; return;
+  }
+  if(endDate && endDate < date){
+    errEl.textContent = 'End date cannot be before the start date.'; return;
+  }
+  if(!endDate) endDate = date;
+  const includeSundays = planIncludeSundays;
+  if(!includeSundays && date === endDate && isSundayDate(date)){
+    errEl.textContent = 'This date is a Sunday and Sundays are set to skip. Toggle "Include Sundays" or pick another date.';
+    return;
+  }
+  errEl.textContent = '';
+  const payload = {date, endDate, includeSundays, college, location, studentCount, employeesNeeded, assignedNames, notes};
+  try{
+    await registerCollege(college);
+    await Promise.all(assignedNames.map(n=>registerPerson(n)));
+    if(editingPlanId) await apiSend('PUT', `plans/${editingPlanId}`, payload);
+    else              await apiSend('POST','plans', payload);
+    resetPlanForm(); await refreshAndRender();
+  }catch(err){ errEl.textContent = err.message; }
+}
+function editPlan(id){
+  const row = state.plans.find(e=>e.id===id); if(!row) return;
+  editingPlanId = id;
+  selectedPlanDate = row.date;
+  planCalDate = new Date(row.date + 'T00:00:00');
+  planCalDate.setDate(1);
+  planDatePickTarget = null;
+  document.getElementById('planDate').value            = row.date;
+  document.getElementById('planEndDate').value          = (row.endDate && row.endDate !== row.date) ? row.endDate : '';
+  document.getElementById('planCollege').value          = row.college;
+  document.getElementById('planLocation').value         = row.location || '';
+  document.getElementById('planStudents').value         = row.studentCount ?? '';
+  document.getElementById('planEmployeesNeeded').value  = row.employeesNeeded ?? '';
+  document.getElementById('planAssignedNames').value    = (row.assignedNames||[]).join(', ');
+  document.getElementById('planNotes').value            = row.notes || '';
+  document.getElementById('planFormTitle').textContent  = 'Edit Plan';
+  document.getElementById('planSaveBtn').textContent    = 'Save Changes';
+  document.getElementById('planCancelBtn').style.display = 'inline-flex';
+  planIncludeSundays = row.includeSundays !== false;
+  renderPlanEmpPicker();
+  syncPlanDatePickUI();
+  syncSundayToggle();
+  renderPlanCalendar();
+  renderSelectedPlanDay();
+  document.getElementById('planFormTitle').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// Finds plans that clash on the same date: an employee double-booked across colleges,
+// a duplicate plan for the same college, or multiple distinct colleges needing coverage the same day.
+function computePlanConflicts(){
+  const byDate = {};
+  state.plans.forEach(p=> expandPlanDates(p).forEach(d=> (byDate[d] = byDate[d] || []).push(p)));
+  const conflicts = [];
+  const conflictDates = new Set();
+
+  Object.keys(byDate).sort().forEach(date=>{
+    const list = byDate[date];
+    if(list.length < 2) return;
+
+    const nameMap = {};
+    list.forEach(p=> (p.assignedNames||[]).forEach(n=> (nameMap[n] = nameMap[n] || []).push(p.college)));
+    Object.entries(nameMap).forEach(([name, colleges])=>{
+      if(colleges.length > 1){
+        conflicts.push({date, message:`${name} is assigned to ${colleges.length} colleges on ${fmtDate(date)}: ${colleges.join(', ')}`});
+        conflictDates.add(date);
+      }
+    });
+
+    const collegeCounts = {};
+    list.forEach(p=> collegeCounts[p.college] = (collegeCounts[p.college]||0) + 1);
+    Object.entries(collegeCounts).forEach(([college, count])=>{
+      if(count > 1){
+        conflicts.push({date, message:`${college} has ${count} overlapping plan entries on ${fmtDate(date)}`});
+        conflictDates.add(date);
+      }
+    });
+
+    const distinctColleges = Object.keys(collegeCounts);
+    if(distinctColleges.length > 1){
+      conflicts.push({date, message:`${distinctColleges.length} different college visits planned on ${fmtDate(date)} (${distinctColleges.join(', ')}) — confirm staff availability.`});
+      conflictDates.add(date);
+    }
+  });
+
+  return {conflicts, conflictDates};
+}
+
+function summarizeConflictDates(dates){
+  if(!dates.length) return [];
+  const ranges = [];
+  let start = dates[0];
+  let prev = dates[0];
+  for(let i=1; i<dates.length; i++){
+    const cur = dates[i];
+    const nextExpected = new Date(prev + 'T00:00:00');
+    nextExpected.setDate(nextExpected.getDate() + 1);
+    const nextStr = `${nextExpected.getFullYear()}-${String(nextExpected.getMonth()+1).padStart(2,'0')}-${String(nextExpected.getDate()).padStart(2,'0')}`;
+    if(cur === nextStr){
+      prev = cur;
+      continue;
+    }
+    ranges.push(start === prev ? fmtDate(start) : `${fmtDate(start)} – ${fmtDate(prev)}`);
+    start = cur;
+    prev = cur;
+  }
+  ranges.push(start === prev ? fmtDate(start) : `${fmtDate(start)} – ${fmtDate(prev)}`);
+  return ranges;
+}
+
+function renderPlanConflicts(){
+  const {conflicts, conflictDates} = computePlanConflicts();
+  const card = document.getElementById('planConflictsCard');
+  const div  = document.getElementById('planConflicts');
+  if(!conflicts.length){ card.style.display = 'none'; div.innerHTML = ''; return; }
+  const dates = [...conflictDates].sort();
+  const ranges = summarizeConflictDates(dates);
+  const doubleBooked = conflicts.filter(c=>c.message.includes(' is assigned to ')).length;
+  const duplicates = conflicts.filter(c=>c.message.includes(' overlapping plan entries')).length;
+  const overlaps = conflicts.filter(c=>c.message.includes('different college visits planned')).length;
+  card.style.display = 'block';
+  div.innerHTML = `
+    <div class="conflict-item">
+      <strong>${dates.length} date${dates.length > 1 ? 's are' : ' is'} overlapping in the calendar</strong>
+      <div class="meta">${ranges.slice(0, 4).join(' • ')}${ranges.length > 4 ? ` • +${ranges.length - 4} more` : ''}</div>
+      <div class="meta subtle">
+        ${overlaps ? `${overlaps} multi-college overlap${overlaps > 1 ? 's' : ''}` : 'Calendar overlap is already marked above'}
+        ${doubleBooked ? ` • ${doubleBooked} employee double-booking${doubleBooked > 1 ? 's' : ''}` : ''}
+        ${duplicates ? ` • ${duplicates} duplicate plan entry${duplicates > 1 ? 'ies' : 'y'}` : ''}
+      </div>
+    </div>`;
+}
+
+function renderPlanCalendar(){
+  const grid  = document.getElementById('planCalGrid');
+  const title = document.getElementById('planCalTitle');
+  const startInput = document.getElementById('planDate');
+  const endInput = document.getElementById('planEndDate');
+  const startValue = startInput ? startInput.value : '';
+  const endValue = endInput ? endInput.value : '';
+  maybeAutoJumpCalendar();
+  const year = planCalDate.getFullYear(), month = planCalDate.getMonth();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  title.textContent = `${monthNames[month]} ${year}`;
+
+  const {conflictDates} = computePlanConflicts();
+  const byDate = {};
+  state.plans.forEach(p=> expandPlanDates(p).forEach(d=> (byDate[d] = byDate[d] || []).push(p)));
+
+  const startOffset = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = planTodayStr();
+
+  let html = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0; i<startOffset; i++) html += `<div class="cal-day empty"></div>`;
+  for(let day=1; day<=daysInMonth; day++){
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const plans = byDate[dateStr] || [];
+    const cls = [
+      'cal-day',
+      conflictDates.has(dateStr) ? 'has-conflict' : '',
+      dateStr === todayStr ? 'today' : '',
+      dateStr < todayStr ? 'past' : '',
+      dateStr === selectedPlanDate ? 'selected' : '',
+      dateStr === startValue || dateStr === endValue ? 'range-anchor' : ''
+    ].filter(Boolean).join(' ');
+    const chips = plans.slice(0,3).map(p=>{
+      const stu = state.hideAmounts ? '••' : (p.studentCount ?? '—');
+      const stf = state.hideAmounts ? '••' : (p.employeesNeeded ?? '—');
+      const rangeTag = planEndStr(p) !== p.date ? ` (${planDateLabel(p)})` : '';
+      return `<div class="cal-plan-chip" title="${p.college}${rangeTag} — ${stu} students, ${stf} staff needed">${p.college}${rangeTag ? ' ⟷' : ''}</div>`;
+    }).join('');
+    const more = plans.length > 3 ? `<div class="muted" style="font-size:10.5px;">+${plans.length-3} more</div>` : '';
+    const hint = plans.length ? `${plans.length} plan(s) — click to add another` : 'Click to plan this day';
+    html += `<div class="${cls}" data-date="${dateStr}" title="${hint}">
+      <div class="cal-daynum">${day}</div>
+      ${chips}${more}
+    </div>`;
+  }
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.cal-day[data-date]').forEach(cell=>{
+    cell.addEventListener('click', ()=>{
+      const dateStr = cell.dataset.date;
+      selectedPlanDate = dateStr;
+
+      if(planDatePickTarget){
+        // Active pick mode: fill the target field
+        applyCalendarDatePick(dateStr);
+      } else {
+        // No active pick mode: auto-fill start then end if empty
+        const startInput = document.getElementById('planDate');
+        const endInput   = document.getElementById('planEndDate');
+        if(!startInput.value){
+          planDatePickTarget = 'start';
+          applyCalendarDatePick(dateStr);
+        } else if(!endInput.value){
+          planDatePickTarget = 'end';
+          applyCalendarDatePick(dateStr);
+        } else {
+          renderSelectedPlanDay();
+          renderPlanCalendar();
+        }
+      }
+
+      // Scroll the details panel (above calendar) into view
+      const details = document.getElementById('planDayDetails');
+      if(details) details.scrollIntoView({behavior:'smooth', block:'nearest'});
+    });
+  });
+}
+
+function renderPlanTable(){
+  const rows = state.plans.slice().sort((a,b)=> a.date.localeCompare(b.date));
+  const {conflictDates} = computePlanConflicts();
+  const table = document.getElementById('planTable');
+  if(!rows.length){
+    table.innerHTML = `<tbody><tr><td class="empty-state"><p>No upcoming plans added yet.</p></td></tr></tbody>`;
+    return;
+  }
+  table.innerHTML = `
+    <thead><tr><th>Date</th><th>College</th><th>Location</th><th>Students</th><th>Staffing</th><th>Assigned</th><th>Notes</th><th></th></tr></thead>
+    <tbody>${rows.map(p=>{
+      const conflict = expandPlanDates(p).some(d=>conflictDates.has(d));
+      const assigned = (p.assignedNames||[]).length;
+      const hasNeed = p.employeesNeeded !== null && p.employeesNeeded !== undefined && p.employeesNeeded !== '';
+      const needed = hasNeed ? Number(p.employeesNeeded) || 0 : null;
+      const short = hasNeed ? Math.max(0, needed - assigned) : 0;
+      const names = (p.assignedNames||[]).map(n=>`<span class="plan-chip-tag">${n}</span>`).join('') || '<span class="muted">Unassigned</span>';
+      const staffing = hasNeed
+        ? (state.hideAmounts
+            ? '<span class="masked-val">••</span>'
+            : `<span class="${short > 0 ? 'staff-short' : 'staff-ok'}">${assigned}/${needed}</span>${short > 0 ? ` <span class="plan-chip-tag short">${short} short</span>` : ''}`)
+        : '<span class="muted">—</span>';
+      return `<tr${conflict ? ' class="row-conflict"' : ''}>
+        <td>${planDateLabel(p)}${conflict ? ' ⚠️' : ''}</td>
+        <td><strong>${p.college}</strong></td>
+        <td>${p.location || ''}</td>
+        <td>${maskNum(p.studentCount)}</td>
+        <td>${staffing}</td>
+        <td>${names}</td>
+        <td>${p.notes || ''}</td>
+        <td>${deleteButtonHTML(p.id,'plans')}</td>
+      </tr>`;
+    }).join('')}</tbody>`;
+  wireRowActions(table, 'plans', state.plans, editPlan);
+}
+
+/* ---------- Lists ---------- */
+function renderLists(){
+  const cDiv = document.getElementById('collegeList');
+  cDiv.innerHTML = state.lists.colleges.length
+    ? state.lists.colleges.map((c,i)=>`
+        <div class="list-item">
+          <span>${c}</span>
+          <span class="row-actions" data-del-idx="${i}" data-del-list="colleges">
+            <button class="btn danger" data-action="del">Remove</button>
+          </span>
+        </div>`).join('')
+    : '<p class="muted">No colleges added yet.</p>';
+
+  const pDiv = document.getElementById('personList');
+  pDiv.innerHTML = state.lists.people.length
+    ? state.lists.people.map((p,i)=>`
+        <div class="list-item">
+          <span>${p}</span>
+          <span class="row-actions" data-del-idx="${i}" data-del-list="people">
+            <button class="btn danger" data-action="del">Remove</button>
+          </span>
+        </div>`).join('')
+    : '<p class="muted">No people added yet.</p>';
+
+  [cDiv, pDiv].forEach(container=>{
+    container.querySelectorAll('[data-del-idx]').forEach(span=>{
+      span.querySelector('[data-action="del"]').addEventListener('click', ()=>{
+        span.innerHTML = `<span class="inline-confirm">Remove?
+          <button class="btn danger" data-action="yes">Yes</button>
+          <button class="btn ghost" data-action="no">No</button></span>`;
+        span.querySelector('[data-action="yes"]').addEventListener('click', async ()=>{
+          const listName = span.dataset.delList, idx = Number(span.dataset.delIdx);
+          const name   = state.lists[listName][idx];
+          const idMap  = listName==='colleges' ? state.lists.collegeIds : state.lists.personIds;
+          const path   = listName==='colleges' ? 'colleges' : 'people';
+          try{ await apiSend('DELETE', `${path}/${idMap[name]}`); await refreshAndRender(); }
+          catch(err){ showApiError(err.message); }
+        });
+        span.querySelector('[data-action="no"]').addEventListener('click', renderAll);
+      });
+    });
+  });
+}
+
+/* ---------- Summary ---------- */
+function renderSummary(){
+  const body = document.getElementById('monthlyBody');
+  const incomeYear = fyFilter(state.income), expenseYear = fyFilter(state.expenses), payrollYear = fyFilter(state.payroll);
+  const totals = computeTotals(incomeYear, expenseYear, payrollYear);
+
+  const months = [];
+  for(let i=0;i<12;i++){
+    const monthIndex = (3+i) % 12;
+    const yearOffset = monthIndex < 3 ? 1 : 0;
+    months.push({monthIndex, year: state.selectedFY + yearOffset});
+  }
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  document.getElementById('summaryKpis').innerHTML = `
+    <div class="kpi green"><div class="label">Total Income</div><div class="value">${formatINR(totals.totalIncome)}</div></div>
+    <div class="kpi red">  <div class="label">Total Expenses</div><div class="value">${formatINR(totals.totalExpenses)}</div></div>
+    <div class="kpi amber"><div class="label">Total Payroll</div><div class="value">${formatINR(totals.totalPayroll)}</div></div>
+    <div class="kpi">      <div class="label">Commission</div><div class="value">${formatINR(totals.totalCommission)}</div></div>
+    <div class="kpi blue"> <div class="label">GST Collected</div><div class="value">${formatINR(totals.totalGst)}</div></div>
+    <div class="kpi">      <div class="label">TDS Credit</div><div class="value">${formatINR(totals.totalTds)}</div></div>
+    <div class="kpi ${totals.profit<0?'red':'green'}"><div class="label">Profit</div><div class="value ${totals.profit<0?'neg':'pos'}">${formatINR(totals.profit)}</div></div>
+    <div class="kpi"><div class="label">In Hand After TDS</div><div class="value">${formatINR(totals.totalInHand)}</div></div>
+  `;
+
+  let html = '';
+
+  months.forEach(m=>{
+    const key = `${m.year}-${String(m.monthIndex+1).padStart(2,'0')}`;
+    const mInc = incomeYear.filter(e=>e.date.startsWith(key));
+    const mExp = expenseYear.filter(e=>e.date.startsWith(key));
+    const mPay = payrollYear.filter(e=>e.date.startsWith(key));
+    const mt   = computeTotals(mInc, mExp, mPay);
+    const hasData = mInc.length || mExp.length || mPay.length;
+    const colleges = [...new Set([...mInc.map(e=>e.college), ...mPay.map(e=>e.college), ...mExp.map(e=>e.college)].filter(Boolean))];
+    const collegeRows = colleges.map(c=>{
+      const s = collegeSummary(c, mInc, mExp, mPay);
+      return `<tr>
+        <td><strong>${c}</strong></td>
+        <td class="amount income-col">${formatINR(s.income)}</td>
+        <td class="amount">${formatINR(s.payroll)}</td>
+        <td class="amount expense-col">${formatINR(s.expenses)}</td>
+        <td class="amount ${s.profit<0?'neg':'pos'}">${formatINR(s.profit)}</td>
+      </tr>`;
+    }).join('');
+
+    html += `<div class="month-row" data-month="${key}">
+      <div class="month-head">
+        <div class="month-head-left">
+          <span class="chev">▶</span>
+          <span>${monthNames[m.monthIndex]} ${m.year}</span>
+          ${!hasData ? '<span class="muted" style="font-size:12px;font-weight:400;">no entries</span>' : ''}
+        </div>
+        <div class="month-head-right">
+          <span>Income <strong>${formatINR(mt.totalIncome)}</strong></span>
+          <span>Profit <strong class="profit-badge ${mt.profit<0?'neg':'pos'}">${formatINR(mt.profit)}</strong></span>
+        </div>
+      </div>
+      <div class="month-body">
+        <div class="month-stats">
+          <div class="month-stat"><div class="s-label">Expenses</div><div class="s-value expense-col">${formatINR(mt.totalExpenses)}</div></div>
+          <div class="month-stat"><div class="s-label">Payroll</div><div class="s-value">${formatINR(mt.totalPayroll)}</div></div>
+          <div class="month-stat"><div class="s-label">Commission</div><div class="s-value">${formatINR(mt.totalCommission)}</div></div>
+          <div class="month-stat"><div class="s-label">GST</div><div class="s-value">${formatINR(mt.totalGst)}</div></div>
+          <div class="month-stat"><div class="s-label">In Hand After TDS</div><div class="s-value income-col">${formatINR(mt.totalInHand)}</div></div>
+        </div>
+        ${colleges.length ? `<div class="table-wrap" style="margin:0;padding:0;">
+          <table>
+            <thead><tr><th>College</th><th>Income</th><th>Payroll</th><th>Expenses</th><th>Profit</th></tr></thead>
+            <tbody>${collegeRows}</tbody>
+          </table></div>` : '<p class="muted">No college-tagged entries this month.</p>'}
+      </div>
+    </div>`;
+  });
+
+  body.innerHTML = html;
+  body.querySelectorAll('.month-head').forEach(h=>{
+    h.addEventListener('click', ()=> h.parentElement.classList.toggle('open'));
+  });
+}
+
+/* ---------- Analysis ---------- */
+let charts = {};
+function destroyCharts(){ Object.values(charts).forEach(c=>c&&c.destroy()); charts={}; }
+function renderAnalysis(){
+  const incomeYear = fyFilter(state.income), expenseYear = fyFilter(state.expenses), payrollYear = fyFilter(state.payroll);
+  const totals = computeTotals(incomeYear, expenseYear, payrollYear);
+  const chartBoxes = [...document.querySelectorAll('.chart-box')];
+  chartBoxes.forEach(box=>box.classList.toggle('masked', state.hideAmounts));
+
+  const monthKeys = [];
+  for(let i=0;i<12;i++){
+    const mi = (3+i) % 12;
+    const yo = mi < 3 ? 1 : 0;
+    monthKeys.push(`${state.selectedFY+yo}-${String(mi+1).padStart(2,'0')}`);
+  }
+  const monthLabels = monthKeys.map(k=>{
+    const [y,m] = k.split('-');
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(m)-1] + ' ' + y.slice(2);
+  });
+
+  const monthlyIncome=[], monthlyExpenses=[], monthlyProfit=[], monthlyGstCollected=[], monthlyGstPaid=[];
+  monthKeys.forEach(key=>{
+    const mInc = incomeYear.filter(e=>e.date.startsWith(key));
+    const mExp = expenseYear.filter(e=>e.date.startsWith(key));
+    const mPay = payrollYear.filter(e=>e.date.startsWith(key));
+    const mt   = computeTotals(mInc, mExp, mPay);
+    monthlyIncome.push(mt.totalIncome);
+    monthlyExpenses.push(mt.totalExpenses + mt.totalPayroll);
+    monthlyProfit.push(mt.profit);
+    monthlyGstCollected.push(mt.totalGst);
+    monthlyGstPaid.push(0);
+  });
+  let running = 0;
+  const cumulativeProfit = monthlyProfit.map(p=> running += p);
+
+  const chartOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { font: { family: 'Inter', size: 12 }, usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 16 } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11 } } },
+      y: { border: { display: false }, grid: { color: 'rgba(148,163,184,.18)' }, ticks: { font: { family: 'Inter', size: 11 }, callback: v => '₹' + (v>=100000 ? (v/100000).toFixed(1)+'L' : v>=1000 ? (v/1000).toFixed(0)+'K' : v) } }
+    }
+  };
+
+  destroyCharts();
+  document.querySelectorAll('.chart-fallback-note').forEach(n=>n.remove());
+
+  const byEmployee = {};
+  payrollYear.forEach(e=>{
+    const rec = byEmployee[e.person] = byEmployee[e.person] || {total:0, count:0};
+    rec.total += e.amount; rec.count += 1;
+  });
+  const employees = Object.keys(byEmployee).sort((a,b)=> byEmployee[b].total - byEmployee[a].total);
+
+  if(state.hideAmounts){
+    chartBoxes.forEach(box=>{
+      const mask = box.querySelector('.chart-mask');
+      if(mask) mask.textContent = 'Amounts hidden';
+    });
+  } else {
+    if(typeof Chart === 'undefined'){
+      document.querySelectorAll('.charts-grid canvas').forEach(c=>{
+        c.insertAdjacentHTML('afterend', '<p class="muted chart-fallback-note">Charts need an internet connection to load Chart.js.</p>');
+      });
+    } else {
+      charts.monthly = new Chart(document.getElementById('chartMonthly'), {
+    type:'bar',
+    data:{ labels:monthLabels, datasets:[
+      {label:'Revenue',         data:monthlyIncome,   backgroundColor:'rgba(79,70,229,.75)'},
+      {label:'Expenses+Payroll',data:monthlyExpenses, backgroundColor:'rgba(220,38,38,.75)'},
+      {label:'Profit',          data:monthlyProfit,   backgroundColor:'rgba(22,163,74,.75)'},
+    ]},
+    options:{...chartOpts}
+  });
+      charts.cumulative = new Chart(document.getElementById('chartCumulative'), {
+    type:'line',
+    data:{ labels:monthLabels, datasets:[{
+      label:'Cumulative Profit', data:cumulativeProfit,
+      borderColor:'#4f46e5', backgroundColor:'rgba(79,70,229,.08)', fill:true, tension:.35, pointRadius:4
+    }]},
+    options:{...chartOpts}
+  });
+      charts.gst = new Chart(document.getElementById('chartGst'), {
+    type:'bar',
+    data:{ labels:monthLabels, datasets:[
+      {label:'GST Collected',        data:monthlyGstCollected, backgroundColor:'rgba(79,70,229,.75)'},
+      {label:'GST Paid (purchases)', data:monthlyGstPaid,      backgroundColor:'rgba(217,119,6,.75)'},
+    ]},
+    options:{...chartOpts}
+  });
+
+      const spendByCat = {};
+      expenseYear.forEach(e=> spendByCat[e.category] = (spendByCat[e.category]||0) + e.amount);
+      spendByCat['Payroll']    = payrollYear.reduce((s,e)=>s+e.amount,0);
+      spendByCat['Commission'] = incomeYear.reduce((s,e)=>s+(e.commission||0),0);
+      charts.spend = new Chart(document.getElementById('chartSpend'), {
+    type:'doughnut',
+    data:{ labels:Object.keys(spendByCat), datasets:[{
+      data:Object.values(spendByCat),
+      backgroundColor:['#4f46e5','#16a34a','#dc2626','#d97706','#0891b2','#7c3aed','#be185d'],
+    }]},
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{ legend:{ position:'right', labels:{ font:{family:'Inter',size:12}, usePointStyle:true, pointStyle:'circle', boxWidth:8, padding:12 } } } }
+  });
+
+      const revByCollege = {};
+      incomeYear.forEach(e=> revByCollege[e.college] = (revByCollege[e.college]||0) + e.amount);
+      charts.college = new Chart(document.getElementById('chartCollege'), {
+    type:'bar',
+    data:{ labels:Object.keys(revByCollege), datasets:[{
+      label:'Revenue', data:Object.values(revByCollege), backgroundColor:'rgba(79,70,229,.75)'
+    }]},
+    options:{...chartOpts}
+  });
+
+      charts.employee = new Chart(document.getElementById('chartEmployee'), {
+    type:'bar',
+    data:{ labels:employees, datasets:[{
+      label:'Paid', data:employees.map(p=>byEmployee[p].total), backgroundColor:'rgba(217,119,6,.75)'
+    }]},
+    options:{...chartOpts}
+  });
+    }
+  }
+  document.getElementById('employeeTable').innerHTML = employees.length
+    ? `<div class="table-wrap" style="margin:0;padding:0;"><table>
+        <thead><tr><th>Person</th><th>Payments</th><th>Total Received</th></tr></thead>
+        <tbody>${employees.map(p=>`<tr><td><strong>${p}</strong></td><td>${byEmployee[p].count}</td><td class="amount">${formatINR(byEmployee[p].total)}</td></tr>`).join('')}</tbody>
+      </table></div>`
+    : '<p class="muted">No payroll entries this financial year.</p>';
+
+  document.getElementById('analysisNotes').innerHTML = `
+    <p style="margin:0 0 8px;">You earned <strong>${formatINR(totals.totalIncome)}</strong> and kept <strong>${formatINR(totals.profit)}</strong> as profit this financial year.</p>
+    <p style="margin:0 0 8px;"><strong>${formatINR(totals.totalTds)}</strong> sits as TDS credit you can claim; after deductions you received <strong>${formatINR(totals.totalInHand)}</strong> in hand.</p>
+    <p style="margin:0;">GST collected on invoices was <strong>${formatINR(totals.totalGst)}</strong>.</p>`;
+}
+
+/* ---------- Backup ---------- */
+function renderBackup(){
+  const backup = {lists:{colleges:state.lists.colleges, people:state.lists.people}, income:state.income, expenses:state.expenses, payroll:state.payroll, plans:state.plans};
+  document.getElementById('backupText').value = JSON.stringify(state.hideAmounts ? redactBackupValue(backup) : backup, null, 2);
+  document.getElementById('restoreErr').textContent = '';
+}
+
+/* ---------- Master render ---------- */
+function renderAll(){
+  syncPrivacyToggle();
+  syncPlanDatePickUI();
+  syncSundayToggle();
+  fillDatalists();
+  initFYSelect();
+  renderIncomeTable();
+  renderExpenseTable();
+  renderPayrollTable();
+  renderPlanTable();
+  renderPlanConflicts();
+  renderPlanCalendar();
+  renderPlanStats();
+  renderSelectedPlanDay();
+  renderPlanEmpPicker();
+  renderLists();
+  renderSummary();
+  renderAnalysis();
+  renderBackup();
+}
+async function refreshAndRender(){
+  try{
+    await fetchAll();
+    clearApiError();
+    renderAll();
+  }catch(err){
+    showApiError(`Could not reach the server: ${err.message}. Make sure "npm start" is running and MONGODB_URI is set in .env.`);
+  }
+}
+
+/* ---------- Wire events ---------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  initNav();
+
+  document.getElementById('incomeSaveBtn').addEventListener('click',   e=>{ e.preventDefault(); saveIncome(); });
+  document.getElementById('incomeCancelBtn').addEventListener('click', e=>{ e.preventDefault(); resetIncomeForm(); renderAll(); });
+  document.getElementById('incomeFilterCollege').addEventListener('change', renderIncomeTable);
+
+  document.getElementById('expenseSaveBtn').addEventListener('click',   e=>{ e.preventDefault(); saveExpense(); });
+  document.getElementById('expenseCancelBtn').addEventListener('click', e=>{ e.preventDefault(); resetExpenseForm(); renderAll(); });
+  document.getElementById('expenseFilterCollege').addEventListener('change', renderExpenseTable);
+
+  document.getElementById('payrollSaveBtn').addEventListener('click',   e=>{ e.preventDefault(); savePayroll(); });
+  document.getElementById('payrollCancelBtn').addEventListener('click', e=>{ e.preventDefault(); resetPayrollForm(); renderAll(); });
+  document.getElementById('payrollFilterCollege').addEventListener('change', renderPayrollTable);
+
+  document.getElementById('planSaveBtn').addEventListener('click',   e=>{ e.preventDefault(); savePlan(); });
+  document.getElementById('planCancelBtn').addEventListener('click', e=>{ e.preventDefault(); resetPlanForm(); renderAll(); });
+  document.getElementById('planCalPrev').addEventListener('click', ()=>{ planCalDate.setMonth(planCalDate.getMonth()-1); renderPlanCalendar(); });
+  document.getElementById('planCalNext').addEventListener('click', ()=>{ planCalDate.setMonth(planCalDate.getMonth()+1); renderPlanCalendar(); });
+  document.getElementById('planCalToday').addEventListener('click', ()=>{ planCalDate = new Date(); planCalDate.setDate(1); renderPlanCalendar(); });
+  document.getElementById('planDate').addEventListener('focus', ()=> setPlanDatePickTarget('start'));
+  document.getElementById('planDate').addEventListener('click', ()=> setPlanDatePickTarget('start'));
+  document.getElementById('planEndDate').addEventListener('focus', ()=> setPlanDatePickTarget('end'));
+  document.getElementById('planEndDate').addEventListener('click', ()=> setPlanDatePickTarget('end'));
+  document.getElementById('planAssignedNames').addEventListener('input', renderPlanEmpPicker);
+  document.getElementById('planSundayToggle').addEventListener('click', ()=>{
+    planIncludeSundays = !planIncludeSundays;
+    syncSundayToggle();
+    renderPlanCalendar();
+  });
+  document.getElementById('privacyToggle').addEventListener('click', ()=> setPrivacyMode(!state.hideAmounts));
+
+  document.getElementById('addCollegeBtn').addEventListener('click', async ()=>{
+    const input = document.getElementById('newCollege');
+    const v = input.value.trim(); if(!v) return;
+    try{ await apiSend('POST','colleges/ensure',{name:v}); input.value=''; await refreshAndRender(); }
+    catch(err){ showApiError(err.message); }
+  });
+
+  document.getElementById('addPersonBtn').addEventListener('click', async ()=>{
+    const input = document.getElementById('newPerson');
+    const v = input.value.trim(); if(!v) return;
+    try{ await apiSend('POST','people/ensure',{name:v}); input.value=''; await refreshAndRender(); }
+    catch(err){ showApiError(err.message); }
+  });
+
+  document.getElementById('copyBackupBtn').addEventListener('click', ()=>{
+    const ta = document.getElementById('backupText');
+    ta.select();
+    navigator.clipboard.writeText(ta.value)
+      .then(()=>{ const m = document.getElementById('copyMsg'); m.textContent='Copied!'; setTimeout(()=>m.textContent='',2000); })
+      .catch(()=>{ document.getElementById('copyMsg').textContent='Copy failed — select and copy manually.'; });
+  });
+
+  function wireRestoreBtn(){
+    const btn = document.getElementById('restoreBtn');
+    btn.addEventListener('click', ()=>{
+      const errEl = document.getElementById('restoreErr');
+      const text  = document.getElementById('restoreText').value.trim();
+      let parsed;
+      try{ parsed = JSON.parse(text); }
+      catch(e){ errEl.textContent = 'Not valid JSON. Paste the full backup text.'; return; }
+      if(!parsed || typeof parsed !== 'object'){ errEl.textContent='Invalid backup data.'; return; }
+      errEl.textContent = '';
+      const actions = document.getElementById('restoreActions');
+      actions.innerHTML = `<span class="inline-confirm">This will overwrite ALL current data. Are you sure?
+        <button class="btn danger" data-action="yes">Yes, restore</button>
+        <button class="btn ghost"  data-action="no">Cancel</button></span>`;
+      actions.querySelector('[data-action="yes"]').addEventListener('click', async ()=>{
+        try{
+          await apiSend('POST','restore',parsed);
+          actions.innerHTML = `<button class="btn danger" id="restoreBtn">Restore (overwrites current data)</button>`;
+          wireRestoreBtn(); await refreshAndRender();
+        }catch(err){ errEl.textContent = err.message; }
+      });
+      actions.querySelector('[data-action="no"]').addEventListener('click', ()=>{
+        actions.innerHTML = `<button class="btn danger" id="restoreBtn">Restore (overwrites current data)</button>`;
+        wireRestoreBtn();
+      });
+    });
+  }
+  wireRestoreBtn();
+
+  refreshAndRender();
+});
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+}
+</script>
+</body>
+</html>
