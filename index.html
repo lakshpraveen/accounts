@@ -1342,16 +1342,25 @@ tr.row-conflict > td { background: rgba(245, 158, 11, .06); }
     <div class="page-title">Backup &amp; Restore</div>
     <div class="card">
       <h2>Export Backup</h2>
-      <p style="color:var(--text-secondary);font-size:13px;margin:0 0 14px;">Copy this JSON and save it somewhere safe. Do this regularly.</p>
-      <textarea id="backupText" readonly></textarea>
+      <p style="color:var(--text-secondary);font-size:13px;margin:0 0 14px;">Download your data as a file and keep it safe. Use this file to restore on any device.</p>
       <div class="btn-row">
-        <button class="btn" id="copyBackupBtn">Copy to clipboard</button>
+        <button class="btn" id="downloadBackupBtn">⬇ Download Backup File</button>
+        <button class="btn secondary" id="copyBackupBtn">Copy JSON</button>
         <span id="copyMsg" class="muted"></span>
       </div>
+      <textarea id="backupText" readonly style="margin-top:14px;"></textarea>
     </div>
     <div class="card">
       <h2>Restore from Backup</h2>
-      <p style="color:var(--text-secondary);font-size:13px;margin:0 0 14px;">Paste a previously saved backup JSON below. This will overwrite all current data.</p>
+      <p style="color:var(--text-secondary);font-size:13px;margin:0 0 14px;">Load a backup file directly — more reliable than copy-paste for large data.</p>
+      <div class="btn-row" style="margin-top:0;margin-bottom:16px;">
+        <label class="btn" style="cursor:pointer;">
+          📂 Load Backup File
+          <input type="file" id="restoreFileInput" accept=".json,application/json" style="display:none;">
+        </label>
+        <span id="restoreFileName" class="muted"></span>
+      </div>
+      <p style="color:var(--text-secondary);font-size:12px;margin:0 0 8px;">Or paste JSON manually:</p>
       <textarea id="restoreText" placeholder="Paste backup JSON here…" style="background:var(--card);color:var(--text);border-color:var(--border);"></textarea>
       <div id="restoreErr" class="err"></div>
       <div class="btn-row" id="restoreActions">
@@ -2816,39 +2825,68 @@ document.addEventListener('DOMContentLoaded', ()=>{
     catch(err){ showApiError(err.message); }
   });
 
+  // Download backup as a file
+  document.getElementById('downloadBackupBtn').addEventListener('click', ()=>{
+    const json = document.getElementById('backupText').value;
+    const blob = new Blob([json], {type:'application/json'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const date = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = `accounts-backup-${date}.json`;
+    a.click(); URL.revokeObjectURL(url);
+  });
+
   document.getElementById('copyBackupBtn').addEventListener('click', ()=>{
     const ta = document.getElementById('backupText');
     ta.select();
     navigator.clipboard.writeText(ta.value)
       .then(()=>{ const m = document.getElementById('copyMsg'); m.textContent='Copied!'; setTimeout(()=>m.textContent='',2000); })
-      .catch(()=>{ document.getElementById('copyMsg').textContent='Copy failed — select and copy manually.'; });
+      .catch(()=>{ document.getElementById('copyMsg').textContent='Copy failed — use Download instead.'; });
   });
+
+  // Load backup from file
+  document.getElementById('restoreFileInput').addEventListener('change', (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    document.getElementById('restoreFileName').textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      document.getElementById('restoreText').value = ev.target.result;
+      document.getElementById('restoreErr').textContent = '';
+    };
+    reader.readAsText(file);
+  });
+
+  function doRestore(parsed){
+    const errEl  = document.getElementById('restoreErr');
+    const actions = document.getElementById('restoreActions');
+    errEl.textContent = '';
+    actions.innerHTML = `<span class="inline-confirm">This will overwrite ALL current data. Are you sure?
+      <button class="btn danger" data-action="yes">Yes, restore</button>
+      <button class="btn ghost"  data-action="no">Cancel</button></span>`;
+    actions.querySelector('[data-action="yes"]').addEventListener('click', async ()=>{
+      try{
+        await apiSend('POST','restore',parsed);
+        actions.innerHTML = `<button class="btn danger" id="restoreBtn">Restore (overwrites current data)</button>`;
+        wireRestoreBtn(); await refreshAndRender();
+      }catch(err){ errEl.textContent = err.message; }
+    });
+    actions.querySelector('[data-action="no"]').addEventListener('click', ()=>{
+      actions.innerHTML = `<button class="btn danger" id="restoreBtn">Restore (overwrites current data)</button>`;
+      wireRestoreBtn();
+    });
+  }
 
   function wireRestoreBtn(){
     const btn = document.getElementById('restoreBtn');
     btn.addEventListener('click', ()=>{
       const errEl = document.getElementById('restoreErr');
       const text  = document.getElementById('restoreText').value.trim();
+      if(!text){ errEl.textContent = 'Paste JSON or load a backup file above.'; return; }
       let parsed;
       try{ parsed = JSON.parse(text); }
-      catch(e){ errEl.textContent = 'Not valid JSON. Paste the full backup text.'; return; }
+      catch(e){ errEl.textContent = `Invalid JSON: ${e.message}. Try using the Download/Load File buttons instead of copy-paste.`; return; }
       if(!parsed || typeof parsed !== 'object'){ errEl.textContent='Invalid backup data.'; return; }
-      errEl.textContent = '';
-      const actions = document.getElementById('restoreActions');
-      actions.innerHTML = `<span class="inline-confirm">This will overwrite ALL current data. Are you sure?
-        <button class="btn danger" data-action="yes">Yes, restore</button>
-        <button class="btn ghost"  data-action="no">Cancel</button></span>`;
-      actions.querySelector('[data-action="yes"]').addEventListener('click', async ()=>{
-        try{
-          await apiSend('POST','restore',parsed);
-          actions.innerHTML = `<button class="btn danger" id="restoreBtn">Restore (overwrites current data)</button>`;
-          wireRestoreBtn(); await refreshAndRender();
-        }catch(err){ errEl.textContent = err.message; }
-      });
-      actions.querySelector('[data-action="no"]').addEventListener('click', ()=>{
-        actions.innerHTML = `<button class="btn danger" id="restoreBtn">Restore (overwrites current data)</button>`;
-        wireRestoreBtn();
-      });
+      doRestore(parsed);
     });
   }
   wireRestoreBtn();
